@@ -3,63 +3,29 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-import hello_world;
-import hello;
+import Game;
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool quit = false;
 
-void main_loop() {
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) {
-            quit = true;
-#ifdef __EMSCRIPTEN__
-            emscripten_cancel_main_loop();  // ループ終了（Emscripten）
-#endif
-            return;
-        }
+void main_loop(Game& game) {
+    // 前フレームの時刻を記録
+    Uint32 last_time = SDL_GetTicks();
+
+    while (game.isRunning()) {
+        Uint32 current_time = SDL_GetTicks();
+        double delta_time = (current_time - last_time) / 1000.0;  // 秒単位に変換
+        last_time = current_time;
+
+        game.tick(delta_time);
+
+        // 60fps相当でスリープ（必要なら可変にしても良い）
+        SDL_Delay(16);
     }
-
-    // 背景を黒にクリア
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-
-    // 線の色（赤）
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-
-    // 三角形の3点を定義
-    SDL_Point p1 = {320, 100};
-    SDL_Point p2 = {220, 380};
-    SDL_Point p3 = {420, 380};
-
-    // 3本の線で三角形を描画
-    SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
-    SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
-    SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
-
-    // 描画内容を画面に反映
-    SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char* argv[]) {
-    hello();                                  // モジュール関数の呼び出し
-    hello2();                                 // モジュール関数の呼び出し
-    hello3();                                 // モジュール関数の呼び出し
-    const auto expected_greet = greet(true);  // モジュール関数の呼び出し
-    if (expected_greet) {
-        std::cout << expected_greet.value() << std::endl;
-    } else {
-        std::cerr << expected_greet.error() << std::endl;
-    }
-    const auto expected_greet_fail = greet(false);  // モジュール関数の呼び出し
-    if (expected_greet_fail) {
-        std::cout << expected_greet_fail.value() << std::endl;
-    } else {
-        std::cerr << expected_greet_fail.error() << std::endl;
-    }
-    std::cout << "3 + 5 = " << add(3, 5) << std::endl;  // add関数の呼び出し
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -86,13 +52,25 @@ int main(int argc, char* argv[]) {
     }
 
 #ifdef __EMSCRIPTEN__
+    Game game(window, renderer);
+    const auto main_loop_bind = std::bind(main_loop, std::ref(game));
     // Emscriptenのメインループ登録（60fps）
-    emscripten_set_main_loop(main_loop, 60, 1);
+    emscripten_set_main_loop(main_loop_bind, 60, 1);
 #else
-    // ネイティブのメインループ（約60fps相当）
-    while (!quit) {
-        main_loop();
-        SDL_Delay(16);  // 60fps程度のスリープ
+    Game game(window, renderer);
+
+    // 前フレームの時刻を記録
+    Uint32 last_time = SDL_GetTicks();
+
+    while (game.isRunning()) {
+        Uint32 current_time = SDL_GetTicks();
+        double delta_time = (current_time - last_time) / 1000.0;  // 秒単位に変換
+        last_time = current_time;
+
+        game.tick(delta_time);
+
+        // 60fps相当でスリープ（必要なら可変にしても良い）
+        SDL_Delay(16);
     }
 #endif
 
