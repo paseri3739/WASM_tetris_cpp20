@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#endif
 #include <iostream>
 import hello_world;
 
@@ -12,7 +14,9 @@ void main_loop() {
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
             quit = true;
-            emscripten_cancel_main_loop();  // ループ終了
+#ifdef __EMSCRIPTEN__
+            emscripten_cancel_main_loop();  // ループ終了（Emscripten）
+#endif
             return;
         }
     }
@@ -65,8 +69,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+#ifdef __EMSCRIPTEN__
     // Emscriptenのメインループ登録（60fps）
     emscripten_set_main_loop(main_loop, 60, 1);
+#else
+    // ネイティブのメインループ（約60fps相当）
+    while (!quit) {
+        main_loop();
+        SDL_Delay(16);  // 60fps程度のスリープ
+    }
+#endif
 
     // （ループ終了後）
     SDL_DestroyRenderer(renderer);

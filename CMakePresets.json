@@ -8,6 +8,35 @@
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
             }
+        },
+        {
+            "name": "emscripten-debug",
+            "displayName": "Emscripten Debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/emscripten-debug",
+            "environment": {
+                "EMSDK": "$env{HOME}/emsdk",
+                "EMSCRIPTEN": "$env{HOME}/emsdk/upstream/emscripten",
+                "PATH": "/opt/homebrew/bin:$penv{PATH}"
+            },
+            "toolchainFile": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXECUTABLE_SUFFIX": ".html",
+                "CMAKE_MAKE_PROGRAM": "/opt/homebrew/bin/ninja"
+            }
+        },
+        {
+            "name": "emscripten-release",
+            "inherits": "emscripten-debug",
+            "displayName": "Emscripten Release",
+            "binaryDir": "${sourceDir}/build/emscripten-release",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
         }
+    ],
+    "buildPresets": [
+        { "name": "emscripten-debug", "configurePreset": "emscripten-debug" },
+        { "name": "emscripten-release", "configurePreset": "emscripten-release" },
+        { "name": "default", "configurePreset": "vcpkg" }
     ]
 }

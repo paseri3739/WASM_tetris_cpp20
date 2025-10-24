@@ -1,5 +1,9 @@
 {
-    "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.path": "clangd",
-    "clangd.arguments": ["-log=verbose", "-pretty", "--background-index", "--compile-commands-dir=${workspaceFolder}"]
+    "clangd.arguments": [
+        "--compile-commands-dir=build/emscripten-debug,build/default",
+        "--query-driver=${env:EMSCRIPTEN_HOME}/upstream/bin/clang++,${env:EMSCRIPTEN_HOME}/upstream/emscripten/em++",
+        "--all-scopes-completion",
+        "--header-insertion=iwyu"
+    ]
 }
