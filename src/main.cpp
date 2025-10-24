@@ -2,78 +2,74 @@
 #include <emscripten.h>
 #include <iostream>
 
-SDL_Window *window = nullptr;
-SDL_Renderer *renderer = nullptr;
+SDL_Window* window = nullptr;
+SDL_Renderer* renderer = nullptr;
 bool quit = false;
 
 void main_loop() {
-  SDL_Event e;
-  while (SDL_PollEvent(&e)) {
-    if (e.type == SDL_QUIT) {
-      quit = true;
-      emscripten_cancel_main_loop(); // ループ終了
-      return;
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            quit = true;
+            emscripten_cancel_main_loop();  // ループ終了
+            return;
+        }
     }
-  }
 
-  // 背景を黒にクリア
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
+    // 背景を黒にクリア
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
 
-  // 線の色（赤）
-  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    // 線の色（赤）
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-  // 三角形の3点を定義
-  SDL_Point p1 = {320, 100};
-  SDL_Point p2 = {220, 380};
-  SDL_Point p3 = {420, 380};
+    // 三角形の3点を定義
+    SDL_Point p1 = {320, 100};
+    SDL_Point p2 = {220, 380};
+    SDL_Point p3 = {420, 380};
 
-  // 3本の線で三角形を描画
-  SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
-  SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
-  SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
+    // 3本の線で三角形を描画
+    SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
+    SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
+    SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
 
-  // 描画内容を画面に反映
-  SDL_RenderPresent(renderer);
+    // 描画内容を画面に反映
+    SDL_RenderPresent(renderer);
 }
 
-int main(int argc, char *argv[]) {
-  // SDLの初期化
-  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError()
-              << std::endl;
-    return 1;
-  }
+int main(int argc, char* argv[]) {
+    // SDLの初期化
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
 
-  // ウィンドウの作成
-  window =
-      SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
-                       SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+    // ウィンドウの作成
+    window = SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
+                              SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
 
-  if (!window) {
-    std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError()
-              << std::endl;
-    SDL_Quit();
-    return 1;
-  }
+    if (!window) {
+        std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
 
-  // レンダラーの作成
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  if (!renderer) {
-    std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError()
-              << std::endl;
+    // レンダラーの作成
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Emscriptenのメインループ登録（60fps）
+    emscripten_set_main_loop(main_loop, 60, 1);
+
+    // （ループ終了後）
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-    return 1;
-  }
 
-  // Emscriptenのメインループ登録（60fps）
-  emscripten_set_main_loop(main_loop, 60, 1);
-
-  // （ループ終了後）
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
-
-  return 0;
+    return 0;
 }
