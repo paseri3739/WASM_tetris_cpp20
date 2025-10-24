@@ -54,9 +54,8 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // （ループ終了後）
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    // ループ終了後、Gameのデストラクタで
+    // SDL_DestroyRenderer と SDL_DestroyWindow が自動的に呼ばれます。
     SDL_Quit();
 
     return 0;
