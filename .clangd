@@ -1,4 +1,1 @@
-CompileFlags:
-    Add:
-        - -std=gnu++20
-    Compiler: clang++
+# インレイヒントなどの設定をここに書く
