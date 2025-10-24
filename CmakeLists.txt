@@ -46,8 +46,17 @@ endif()
 add_executable(app)
 
 # 通常ソース
+file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
+)
+
 target_sources(app PRIVATE
     src/main.cpp
+)
+target_sources(app
+        PUBLIC
+        FILE_SET cxxmods TYPE CXX_MODULES FILES
+        ${MODULE_SOURCES}
 )
 
 # モジュールIFユニットを FILE_SET CXX_MODULES として宣言

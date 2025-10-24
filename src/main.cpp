@@ -4,6 +4,7 @@
 #include <emscripten.h>
 #endif
 import hello_world;
+import hello;
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
