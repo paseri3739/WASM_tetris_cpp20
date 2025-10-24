@@ -1,3 +1,6 @@
 {
-    "dependencies": ["sdl2"]
+  "dependencies": [
+    "sdl2",
+    "tl-expected"
+  ]
 }

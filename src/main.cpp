@@ -44,9 +44,21 @@ void main_loop() {
 }
 
 int main(int argc, char* argv[]) {
-    hello();                                            // モジュール関数の呼び出し
-    hello2();                                           // モジュール関数の呼び出し
-    hello3();
+    hello();                                  // モジュール関数の呼び出し
+    hello2();                                 // モジュール関数の呼び出し
+    hello3();                                 // モジュール関数の呼び出し
+    const auto expected_greet = greet(true);  // モジュール関数の呼び出し
+    if (expected_greet) {
+        std::cout << expected_greet.value() << std::endl;
+    } else {
+        std::cerr << expected_greet.error() << std::endl;
+    }
+    const auto expected_greet_fail = greet(false);  // モジュール関数の呼び出し
+    if (expected_greet_fail) {
+        std::cout << expected_greet_fail.value() << std::endl;
+    } else {
+        std::cerr << expected_greet_fail.error() << std::endl;
+    }
     std::cout << "3 + 5 = " << add(3, 5) << std::endl;  // add関数の呼び出し
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
