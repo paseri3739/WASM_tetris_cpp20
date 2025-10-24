@@ -1,9 +1,10 @@
 {
     "clangd.path": "clangd",
     "clangd.arguments": [
-        "--compile-commands-dir=build/emscripten-debug,build/default",
-        "--query-driver=${env:EMSCRIPTEN_HOME}/upstream/bin/clang++,${env:EMSCRIPTEN_HOME}/upstream/emscripten/em++",
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--query-driver=${env:EMSCRIPTEN_HOME}/upstream/bin/clang++,${env:EMSCRIPTEN_HOME}/upstream/emscripten/em++,clang++",
         "--all-scopes-completion",
-        "--header-insertion=iwyu"
+        "--header-insertion=iwyu",
+        "--experimental-modules-support"
     ]
 }
