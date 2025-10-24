@@ -1,8 +1,8 @@
 #include <SDL2/SDL.h>
+#include <iostream>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-#include <iostream>
 import hello_world;
 
 SDL_Window* window = nullptr;
