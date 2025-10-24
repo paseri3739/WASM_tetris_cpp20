@@ -1,0 +1,79 @@
+cmake_minimum_required(VERSION 3.28)
+
+# Homebrew LLVM の clang/clang++ を優先採用（初回 configure 時のみ効く）
+# 既に -DCMAKE_CXX_COMPILER を渡されている場合は尊重します。
+if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
+    # よくある Homebrew のインストール先を優先探索
+    list(APPEND _LLVM_HINTS
+        /opt/homebrew/opt/llvm/bin # Apple Silicon
+        /usr/local/opt/llvm/bin # Intel Mac
+    )
+    find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
+    if(LLVM_CLANGXX)
+        # C 言語は使わないなら C は設定不要（不要な警告回避のため）
+        set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
+    endif()
+endif()
+
+# macOS SDK を明示（clang-scan-deps が system headers を確実に解決できるように）
+if(APPLE AND NOT CMAKE_OSX_SYSROOT)
+    execute_process(
+        COMMAND xcrun --sdk macosx --show-sdk-path
+        OUTPUT_VARIABLE _SDK_PATH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(_SDK_PATH)
+        set(CMAKE_OSX_SYSROOT "${_SDK_PATH}" CACHE PATH "macOS SDK path" FORCE)
+    endif()
+endif()
+
+
+project(tertis LANGUAGES CXX)
+
+# C++20 + モジュールスキャン
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 参考: AppleClang が選ばれてしまった場合は明示的に落とす（早期に気づくため）
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    message(FATAL_ERROR
+        "AppleClang が選択されています。Homebrew LLVM の clang++ を使用するように設定してください。"
+    )
+endif()
+
+add_executable(app)
+
+# 通常ソース
+target_sources(app PRIVATE
+    src/main.cpp
+)
+
+# モジュールIFユニットを FILE_SET CXX_MODULES として宣言
+# CMakeが依存解析し、BMI生成とビルド順序を解決する
+target_sources(app
+    PUBLIC
+    FILE_SET cxxmods TYPE CXX_MODULES FILES
+    src/hello_world.cppm
+)
+
+if(NOT EMSCRIPTEN)
+    find_package(SDL2 CONFIG REQUIRED)
+    target_link_libraries(app PRIVATE SDL2::SDL2 SDL2::SDL2main)
+endif()
+
+# Emscripten + SDL2 (Ports) を使う場合のリンクオプション
+# -sUSE_SDL=2 はリンク時オプションなので target_link_options で指定
+if(EMSCRIPTEN)
+    target_link_options(app PRIVATE
+        "-sUSE_SDL=2" # SDL2ポートをリンク
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sASSERTIONS=1"
+    )
+    # 出力を .html にする場合
+    set_target_properties(app PROPERTIES SUFFIX ".html")
+endif()
+
+# 任意: デバッグ用に選択されたコンパイラ/SDK をログ表示
+message(STATUS "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}")
