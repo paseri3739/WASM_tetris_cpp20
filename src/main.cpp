@@ -46,6 +46,7 @@ void main_loop() {
 int main(int argc, char* argv[]) {
     hello();                                            // モジュール関数の呼び出し
     hello2();                                           // モジュール関数の呼び出し
+    hello3();
     std::cout << "3 + 5 = " << add(3, 5) << std::endl;  // add関数の呼び出し
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
