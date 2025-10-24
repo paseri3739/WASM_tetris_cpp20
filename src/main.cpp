@@ -9,20 +9,13 @@ SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 bool quit = false;
 
-void main_loop(Game& game) {
-    // 前フレームの時刻を記録
-    Uint32 last_time = SDL_GetTicks();
-
-    while (game.isRunning()) {
-        Uint32 current_time = SDL_GetTicks();
-        double delta_time = (current_time - last_time) / 1000.0;  // 秒単位に変換
-        last_time = current_time;
-
-        game.tick(delta_time);
-
-        // 60fps相当でスリープ（必要なら可変にしても良い）
-        SDL_Delay(16);
-    }
+void main_loop_tick(void* arg) {
+    Game* game = static_cast<Game*>(arg);
+    static Uint32 last_time = SDL_GetTicks();
+    Uint32 current_time = SDL_GetTicks();
+    double delta_time = (current_time - last_time) / 1000.0;
+    last_time = current_time;
+    game->tick(delta_time);
 }
 
 int main(int argc, char* argv[]) {
@@ -50,27 +43,14 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
+    Game game(window, renderer);
 
 #ifdef __EMSCRIPTEN__
-    Game game(window, renderer);
-    const auto main_loop_bind = std::bind(main_loop, std::ref(game));
     // Emscriptenのメインループ登録（60fps）
-    emscripten_set_main_loop(main_loop_bind, 60, 1);
+    emscripten_set_main_loop_arg(main_loop, &game, 60, 1);
 #else
-    Game game(window, renderer);
-
-    // 前フレームの時刻を記録
-    Uint32 last_time = SDL_GetTicks();
-
     while (game.isRunning()) {
-        Uint32 current_time = SDL_GetTicks();
-        double delta_time = (current_time - last_time) / 1000.0;  // 秒単位に変換
-        last_time = current_time;
-
-        game.tick(delta_time);
-
-        // 60fps相当でスリープ（必要なら可変にしても良い）
-        SDL_Delay(16);
+        main_loop_tick(&game);
     }
 #endif
 

@@ -47,26 +47,20 @@ add_executable(app)
 
 # 通常ソース
 file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
 )
 
 target_sources(app PRIVATE
     src/main.cpp
 )
 target_sources(app
-        PUBLIC
-        FILE_SET cxxmods TYPE CXX_MODULES FILES
-        ${MODULE_SOURCES}
+    PUBLIC
+    FILE_SET cxxmods TYPE CXX_MODULES FILES
+    ${MODULE_SOURCES}
 )
 
 # モジュールIFユニットを FILE_SET CXX_MODULES として宣言
 # CMakeが依存解析し、BMI生成とビルド順序を解決する
-target_sources(app
-    PUBLIC
-    FILE_SET cxxmods TYPE CXX_MODULES FILES
-    src/hello_world.cppm
-)
-
 if(NOT EMSCRIPTEN)
     find_package(SDL2 CONFIG REQUIRED)
     target_link_libraries(app PRIVATE SDL2::SDL2 SDL2::SDL2main)
