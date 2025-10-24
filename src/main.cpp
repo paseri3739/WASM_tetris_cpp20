@@ -43,7 +43,8 @@ void main_loop() {
 }
 
 int main(int argc, char* argv[]) {
-    hello();  // モジュール関数の呼び出し
+    hello();   // モジュール関数の呼び出し
+    hello2();  // モジュール関数の呼び出し
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
