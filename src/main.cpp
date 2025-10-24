@@ -43,17 +43,19 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
-    Game game(window, renderer);
+    {  // Gameオブジェクトのスコープを明示的に限定
+        Game game(window, renderer);
 
 #ifdef __EMSCRIPTEN__
-    // Emscriptenのメインループ登録（60fps）
-    emscripten_set_main_loop_arg(main_loop_tick, &game, 60, 1);
+        // Emscriptenのメインループ登録（60fps）
+        emscripten_set_main_loop_arg(main_loop_tick, &game, 60, 1);
 #else
-    while (game.isRunning()) {
-        main_loop_tick(&game);
-    }
+        while (game.isRunning()) {
+            main_loop_tick(&game);
+        }
 #endif
-
+        // gameのスコープを抜けるときにデストラクタが呼ばれる
+    }
     // ループ終了後、Gameのデストラクタで
     // SDL_DestroyRenderer と SDL_DestroyWindow が自動的に呼ばれます。
     SDL_Quit();
