@@ -53,20 +53,29 @@ file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
 target_sources(app PRIVATE
     src/main.cpp
 )
+
+# モジュールIFユニットを FILE_SET CXX_MODULES として宣言
+# CMakeが依存解析し、BMI生成とビルド順序を解決する
 target_sources(app
     PUBLIC
     FILE_SET cxxmods TYPE CXX_MODULES FILES
     ${MODULE_SOURCES}
 )
 
+# 共通パッケージ
 find_package(tl-expected CONFIG REQUIRED)
 target_link_libraries(app PRIVATE tl::expected)
 
-# モジュールIFユニットを FILE_SET CXX_MODULES として宣言
-# CMakeが依存解析し、BMI生成とビルド順序を解決する
+# ネイティブ専用 SDL2 関連パッケージ
 if(NOT EMSCRIPTEN)
     find_package(SDL2 CONFIG REQUIRED)
     target_link_libraries(app PRIVATE SDL2::SDL2 SDL2::SDL2main)
+    find_package(SDL2_image CONFIG REQUIRED)
+    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
+    find_package(SDL2_mixer CONFIG REQUIRED)
+    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>)
+    find_package(SDL2_ttf CONFIG REQUIRED)
+    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>)
 endif()
 
 # Emscripten + SDL2 (Ports) を使う場合のリンクオプション
