@@ -9,9 +9,7 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 // ここは vcpkg のみを唯一の toolchain とする
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-                "CMAKE_CXX_COMPILER": "clang++",
-                // ネイティブ用（例）: 必要ならトリプレットを固定
-                "VCPKG_TARGET_TRIPLET": "x64-osx"
+                "CMAKE_CXX_COMPILER": "clang++"
             }
         },
         {
