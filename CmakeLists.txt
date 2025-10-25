@@ -2,18 +2,18 @@ cmake_minimum_required(VERSION 3.28)
 
 # Homebrew LLVM の clang/clang++ を優先採用（初回 configure 時のみ効く）
 # 既に -DCMAKE_CXX_COMPILER を渡されている場合は尊重します。
-if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
-    # よくある Homebrew のインストール先を優先探索
-    list(APPEND _LLVM_HINTS
-        /opt/homebrew/opt/llvm/bin # Apple Silicon
-        /usr/local/opt/llvm/bin # Intel Mac
-    )
-    find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
-    if(LLVM_CLANGXX)
-        # C 言語は使わないなら C は設定不要（不要な警告回避のため）
-        set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
-    endif()
-endif()
+# if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
+#     # よくある Homebrew のインストール先を優先探索
+#     list(APPEND _LLVM_HINTS
+#         /opt/homebrew/opt/llvm/bin # Apple Silicon
+#         /usr/local/opt/llvm/bin # Intel Mac
+#     )
+#     find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
+#     if(LLVM_CLANGXX)
+#         # C 言語は使わないなら C は設定不要（不要な警告回避のため）
+#         set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
+#     endif()
+# endif()
 
 # macOS SDK を明示（clang-scan-deps が system headers を確実に解決できるように）
 if(APPLE AND NOT CMAKE_OSX_SYSROOT)
@@ -58,6 +58,9 @@ target_sources(app
     FILE_SET cxxmods TYPE CXX_MODULES FILES
     ${MODULE_SOURCES}
 )
+
+find_package(tl-expected CONFIG REQUIRED)
+target_link_libraries(app PRIVATE tl::expected)
 
 # モジュールIFユニットを FILE_SET CXX_MODULES として宣言
 # CMakeが依存解析し、BMI生成とビルド順序を解決する

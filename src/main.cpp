@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <tl/expected.hpp>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -18,7 +19,21 @@ void main_loop_tick(void* arg) {
     game->tick(delta_time);
 }
 
+tl::expected<std::string, std::string> greeting(bool should_succeed) {
+    if (should_succeed) {
+        return tl::expected<std::string, std::string>("Hello, World!");
+    } else {
+        return tl::unexpected<std::string>("Failed to get greeting.");
+    }
+}
+
 int main(int argc, char* argv[]) {
+    const auto result = greeting(true);
+    if (result) {
+        std::cout << "Greeting: " << *result << std::endl;
+    } else {
+        std::cerr << "Error: " << result.error() << std::endl;
+    }
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;

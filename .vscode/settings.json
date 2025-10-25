@@ -6,5 +6,6 @@
         "--all-scopes-completion",
         "--header-insertion=iwyu",
         "--experimental-modules-support"
-    ]
+    ],
+    "cmake.copyCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
