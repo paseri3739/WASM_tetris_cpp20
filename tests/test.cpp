@@ -1,3 +1,4 @@
-//
-// Created by Masato Suzuki on 2025/10/26.
-//
+#include <gtest/gtest.h>
+import add;
+
+TEST(AddTest, BasicAssersions) { EXPECT_EQ(add(2, 5), 7); }

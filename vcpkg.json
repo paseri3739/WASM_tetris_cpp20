@@ -1,3 +1,10 @@
 {
-    "dependencies": ["sdl2", "sdl2-image", "sdl2-mixer", "tl-expected", "sdl2-ttf"]
+  "dependencies": [
+    "sdl2",
+    "sdl2-image",
+    "sdl2-mixer",
+    "sdl2-ttf",
+    "tl-expected",
+    "gtest"
+  ]
 }
