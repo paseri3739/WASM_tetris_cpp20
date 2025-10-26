@@ -1,70 +1,81 @@
 {
-  "version": 7,
-  "configurePresets": [
-    {
-      "name": "vcpkg",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
-        "CMAKE_MAKE_PROGRAM": "ninja"
-      }
-    },
-    {
-      "name": "emscripten-debug",
-      "displayName": "Emscripten Debug",
-      "inherits": "vcpkg",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/emscripten-debug",
-      "environment": {
-        "EMSDK": "$env{HOME}/emsdk",
-        "EMSCRIPTEN": "$env{HOME}/emsdk/upstream/emscripten",
-        "PATH": "/opt/homebrew/bin:$penv{PATH}"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
-        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-        "CMAKE_CXX_COMPILER": "$env{EMSCRIPTEN}/em++"
-      }
-    },
-    {
-      "name": "emscripten-release",
-      "inherits": "emscripten-debug",
-      "displayName": "Emscripten Release",
-      "binaryDir": "${sourceDir}/build/emscripten-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "emscripten-debug",
-      "configurePreset": "emscripten-debug"
-    },
-    {
-      "name": "emscripten-release",
-      "configurePreset": "emscripten-release"
-    },
-    {
-      "name": "vcpkg",
-      "configurePreset": "vcpkg"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "vcpkg",
-      "configurePreset": "vcpkg",
-      "output": {
-        "verbosity": "verbose"
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "stopOnFailure": true
-      }
-    }
-  ]
+    "version": 7,
+    "configurePresets": [
+        {
+            "name": "vcpkg",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+                "CMAKE_MAKE_PROGRAM": "ninja"
+            }
+        },
+        {
+            "name": "emscripten-debug",
+            "displayName": "Emscripten Debug",
+            "inherits": "vcpkg",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/emscripten-debug",
+            "environment": {
+                "EMSDK": "$env{HOME}/emsdk",
+                "EMSCRIPTEN": "$env{HOME}/emsdk/upstream/emscripten",
+                "PATH": "/opt/homebrew/bin:$penv{PATH}"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
+                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+                "CMAKE_CXX_COMPILER": "$env{EMSCRIPTEN}/em++"
+            }
+        },
+        {
+            "name": "emscripten-release",
+            "inherits": "emscripten-debug",
+            "displayName": "Emscripten Release",
+            "binaryDir": "${sourceDir}/build/emscripten-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "emscripten-debug",
+            "configurePreset": "emscripten-debug"
+        },
+        {
+            "name": "emscripten-release",
+            "configurePreset": "emscripten-release"
+        },
+        {
+            "name": "vcpkg",
+            "configurePreset": "vcpkg",
+            "targets": ["app", "app_tests"]
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "vcpkg",
+            "configurePreset": "vcpkg",
+            "output": {
+                "verbosity": "verbose"
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "vcpkg-with-tests",
+            "steps": [
+                { "type": "configure", "name": "vcpkg" },
+                { "type": "build", "name": "vcpkg" },
+                { "type": "test", "name": "vcpkg" }
+            ]
+        }
+    ]
 }

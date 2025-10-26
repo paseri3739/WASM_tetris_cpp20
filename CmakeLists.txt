@@ -98,7 +98,8 @@ endif()
 
 # ▼ テスト用バイナリ（**GUI 依存を切り離す**）
 # test/test.cpp（import add; を含む）→ core のモジュールを再利用
-if(NOT EMSCRIPTEN) # Emscripten 環境では gtest 実行を通常スキップ
+include(CTest)
+if(BUILD_TESTING AND NOT EMSCRIPTEN) # Emscripten 環境では gtest 実行を通常スキップ
         find_package(GTest CONFIG REQUIRED)
 
         add_executable(app_tests
