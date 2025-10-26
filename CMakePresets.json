@@ -30,7 +30,8 @@
                 // ★ 最重要: Emscripten を vcpkg にチェーン
                 "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
                 // ★ wasm 用トリプレット(vcpkg が wasm 用に解決）
-                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten"
+                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+                "CMAKE_CXX_COMPILER": "$env{EMSCRIPTEN}/em++"
             }
         },
         {
