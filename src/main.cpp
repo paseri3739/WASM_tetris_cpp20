@@ -5,6 +5,7 @@
 #include <emscripten.h>
 #endif
 import Game;
+import Scene;
 
 void main_loop_tick(void* arg) {
     Game* game = static_cast<Game*>(arg);
@@ -41,7 +42,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     {  // Gameオブジェクトのスコープを明示的に限定
-        Game game(window, renderer);
+        auto initial_scene = std::make_unique<scene::InitialScene>();
+        auto scene_manager = std::make_unique<scene::SceneManager>(std::move(initial_scene));
+        Game game(window, renderer, std::move(scene_manager));
 
 #ifdef __EMSCRIPTEN__
         // Emscriptenのメインループ登録（60fps）

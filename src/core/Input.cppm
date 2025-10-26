@@ -7,7 +7,7 @@ module;
 #include <unordered_map>
 export module Input;
 
-namespace KeyMapping {
+namespace input {
 /**
  * 抽象キー入力を表現するenum
  */
@@ -68,19 +68,19 @@ export struct InputState {
 };
 
 // enum class を unordered_map のキーに使うためのハッシュ特化
-}  // namespace KeyMapping
+}  // namespace input
 
 namespace std {
 template <>
-struct hash<KeyMapping::InputKey> {
-    size_t operator()(const KeyMapping::InputKey& k) const noexcept {
-        using U = std::underlying_type_t<KeyMapping::InputKey>;
+struct hash<input::InputKey> {
+    size_t operator()(const input::InputKey& k) const noexcept {
+        using U = std::underlying_type_t<input::InputKey>;
         return std::hash<U>{}(static_cast<U>(k));
     }
 };
 }  // namespace std
 
-namespace KeyMapping {
+namespace input {
 /**
  * 入力状態を表現する構造体
  * - key_states: 各キーの状態を保持するマップ
@@ -216,7 +216,7 @@ export std::shared_ptr<const Input> poll_input(std::shared_ptr<const Input> prev
 
         if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) continue;
 
-        auto maybe_key = KeyMapping::to_input_key(event.key.keysym.sym);
+        auto maybe_key = input::to_input_key(event.key.keysym.sym);
         if (!maybe_key.has_value()) continue;
 
         InputKey key = maybe_key.value();
@@ -233,4 +233,4 @@ export std::shared_ptr<const Input> poll_input(std::shared_ptr<const Input> prev
 
     return input;
 }
-}  // namespace KeyMapping
+}  // namespace input
