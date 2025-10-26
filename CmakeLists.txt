@@ -96,25 +96,29 @@ if(EMSCRIPTEN)
         set_target_properties(app PROPERTIES SUFFIX ".html")
 endif()
 
-# ▼ テスト用バイナリ（**GUI 依存を切り離す**）
-# test/test.cpp（import add; を含む）→ core のモジュールを再利用
+# ▼ テスト用バイナリ（**GUI 依存を切り離す**)
 include(CTest)
-if(BUILD_TESTING AND NOT EMSCRIPTEN) # Emscripten 環境では gtest 実行を通常スキップ
+if(BUILD_TESTING AND NOT EMSCRIPTEN)
         find_package(GTest CONFIG REQUIRED)
 
+        # tests フォルダ以下のすべての .cpp を自動的に収集
+        file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+        )
+
         add_executable(app_tests
-                tests/test.cpp
+                ${TEST_SOURCES}
         )
         target_link_libraries(app_tests PRIVATE core GTest::gtest_main)
 
         enable_testing()
         include(GoogleTest)
-        # SDL 初期化等がないため探索は即時完了。必要ならタイムアウトを延長。
         gtest_discover_tests(app_tests
                 DISCOVERY_TIMEOUT 30
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
 endif()
+
 
 # 任意: デバッグ用に選択されたコンパイラ/SDK をログ表示
 message(STATUS "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
