@@ -26,14 +26,13 @@
             "MIMode": "lldb"
         },
         {
+            // emrun実行後にChromeでデバッグする設定
             "type": "chrome",
             "request": "launch",
             "name": "Launch wasm_app",
             "url": "http://localhost:8080/app.html",
             "webRoot": "${workspaceFolder}",
-            "runtimeArgs": ["--remote-debugging-port=9222"],
-            "preLaunchTask": "run-emrun-server",
-            "postDebugTask": "kill-emrun-server"
+            "runtimeArgs": ["--remote-debugging-port=9222"]
         }
     ]
 }

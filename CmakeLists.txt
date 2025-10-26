@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.28)
 #     endif()
 # endif()
 
-# macOS SDK を明示（clang-scan-deps が system headers を確実に解決できるように）
+# macOS SDK を明示(clang-scan-deps が system headers を確実に解決できるように）
 if(APPLE AND NOT CMAKE_OSX_SYSROOT)
     execute_process(
         COMMAND xcrun --sdk macosx --show-sdk-path
