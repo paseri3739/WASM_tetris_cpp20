@@ -51,9 +51,9 @@ export class Game {
 
     void processInput() {
         const auto input = KeyMapping::poll_input(input_);
-        input_ = input->clear_frame_state();
-        if (input->key_states.at(KeyMapping::InputKey::QUIT).is_pressed) {
+        if (input->pressed(KeyMapping::InputKey::QUIT)) {
             running_ = false;
         }
+        input_ = input;
     }
 };

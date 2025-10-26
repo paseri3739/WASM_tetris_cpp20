@@ -1,6 +1,9 @@
 module;
 #include <SDL2/SDL.h>
+#include <memory>
+#include <optional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 export module Input;
 
@@ -64,14 +67,40 @@ export struct InputState {
     bool is_held = false;
 };
 
+// enum class を unordered_map のキーに使うためのハッシュ特化
+}  // namespace KeyMapping
+
+namespace std {
+template <>
+struct hash<KeyMapping::InputKey> {
+    size_t operator()(const KeyMapping::InputKey& k) const noexcept {
+        using U = std::underlying_type_t<KeyMapping::InputKey>;
+        return std::hash<U>{}(static_cast<U>(k));
+    }
+};
+}  // namespace std
+
+namespace KeyMapping {
 /**
  * 入力状態を表現する構造体
  * - key_states: 各キーの状態を保持するマップ
  * - clear_frame_state: フレーム状態をクリアした新インスタンスを返す
  * - to_string: 入力状態を文字列に変換する
+ *
+ * 追加API（呼び出し側での利用を簡便化）:
+ * - pressed/released/held: 指定キーの瞬間/保持状態の取得
+ * - any_pressed/any_released/any_held: いずれかのキーが該当するか
+ * - first_pressed/first_released/first_held: 優先順に最初に該当したキー
+ * - get_input_key: 全体の集約状態（いずれかが立っていれば OR 集約を返す）
  */
 export struct Input {
     std::unordered_map<InputKey, InputState> key_states;
+
+    // 判定優先順（UI/ゲーム側での期待に応じて調整可能）
+    static constexpr InputKey PRIORITY_ORDER[] = {
+        InputKey::UP,    InputKey::DOWN,        InputKey::LEFT,
+        InputKey::RIGHT, InputKey::ROTATE_LEFT, InputKey::ROTATE_RIGHT,
+        InputKey::DROP,  InputKey::PAUSE,       InputKey::QUIT};
 
     // フレーム状態をクリアした新インスタンスを返す
     [[nodiscard]] std::shared_ptr<const Input> clear_frame_state() const {
@@ -81,6 +110,71 @@ export struct Input {
             state.is_released = false;
         }
         return next;
+    }
+
+    // --- 低レベル: 単一キーの状態取得 ---
+    [[nodiscard]] bool pressed(InputKey k) const {
+        if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_pressed;
+        return false;
+    }
+    [[nodiscard]] bool released(InputKey k) const {
+        if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_released;
+        return false;
+    }
+    [[nodiscard]] bool held(InputKey k) const {
+        if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_held;
+        return false;
+    }
+
+    // --- 中レベル: 全体/集合の簡易判定 ---
+    [[nodiscard]] bool any_pressed() const {
+        for (const auto& [_, s] : key_states)
+            if (s.is_pressed) return true;
+        return false;
+    }
+    [[nodiscard]] bool any_released() const {
+        for (const auto& [_, s] : key_states)
+            if (s.is_released) return true;
+        return false;
+    }
+    [[nodiscard]] bool any_held() const {
+        for (const auto& [_, s] : key_states)
+            if (s.is_held) return true;
+        return false;
+    }
+
+    // --- 高レベル: 優先順で最初に該当したキーを返す ---
+    [[nodiscard]] std::optional<InputKey> first_pressed() const {
+        for (auto k : PRIORITY_ORDER)
+            if (pressed(k)) return k;
+        return std::nullopt;
+    }
+    [[nodiscard]] std::optional<InputKey> first_released() const {
+        for (auto k : PRIORITY_ORDER)
+            if (released(k)) return k;
+        return std::nullopt;
+    }
+    [[nodiscard]] std::optional<InputKey> first_held() const {
+        for (auto k : PRIORITY_ORDER)
+            if (held(k)) return k;
+        return std::nullopt;
+    }
+
+    /**
+     * 全キーの論理和を返す集約ビュー。
+     * いずれかのキーで is_pressed/is_released/is_held が立っていれば、それぞれ true にして返す。
+     * 全て false の場合は std::nullopt。
+     */
+    [[nodiscard]]
+    std::optional<InputState> get_input_key() const {
+        InputState acc{};
+        for (const auto& [_, s] : key_states) {
+            acc.is_pressed = acc.is_pressed || s.is_pressed;
+            acc.is_released = acc.is_released || s.is_released;
+            acc.is_held = acc.is_held || s.is_held;
+        }
+        if (acc.is_pressed || acc.is_released || acc.is_held) return acc;
+        return std::nullopt;
     }
 
     [[nodiscard]]
