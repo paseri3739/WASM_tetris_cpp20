@@ -27,14 +27,10 @@
             // 注意: ここで独自の toolchainFile は使わない(vcpkg に一本化）
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                // 拡張子明示 (Cmake側で設定されてるので省略可能)
-                "CMAKE_EXECUTABLE_SUFFIX": ".html",
                 // ★ 最重要: Emscripten を vcpkg にチェーン
                 "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
                 // ★ wasm 用トリプレット(vcpkg が wasm 用に解決）
-                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-                // （任意）明示したい場合
-                "CMAKE_CXX_COMPILER": "em++"
+                "VCPKG_TARGET_TRIPLET": "wasm32-emscripten"
             }
         },
         {
