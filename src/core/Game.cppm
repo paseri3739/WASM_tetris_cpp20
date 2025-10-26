@@ -1,13 +1,17 @@
 module;
 #include <SDL2/SDL.h>
 #include <memory>
+import Input;
 export module Game;
 
 export class Game {
    public:
     Game(SDL_Window* window, SDL_Renderer* renderer)
         : window_(window, SDL_DestroyWindow), renderer_(renderer, SDL_DestroyRenderer) {}
-    bool isRunning() const { return running_; }
+    [[nodiscard]]
+    bool isRunning() const {
+        return running_;
+    }
     void tick(double delta_time_seconds) {
         this->processInput();
         this->update(delta_time_seconds);
@@ -17,6 +21,7 @@ export class Game {
    private:
     std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window_;
     std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer_;
+    std::shared_ptr<const KeyMapping::Input> input_;
     bool running_ = true;
     void update(double delta_time) {
         // TODO:
@@ -45,36 +50,10 @@ export class Game {
     }
 
     void processInput() {
-        SDL_Event event;
-        // イベントキューからすべてのイベントを処理
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_QUIT:
-                    // 終了イベント（ウィンドウの×ボタンなど）
-                    running_ = false;
-                    break;
-
-                case SDL_KEYDOWN:
-                    // キー押下イベント
-                    if (event.key.keysym.sym == SDLK_ESCAPE) {
-                        running_ = false;  // ESCキーで終了
-                    }
-                    break;
-
-                case SDL_MOUSEBUTTONDOWN:
-                    // マウスクリックイベント
-                    if (event.button.button == SDL_BUTTON_LEFT) {
-                        // 左クリック時の処理
-                        // 例: 座標を取得
-                        int x = event.button.x;
-                        int y = event.button.y;
-                        SDL_Log("Mouse Left Click: (%d, %d)", x, y);
-                    }
-                    break;
-
-                default:
-                    break;
-            }
+        const auto input = KeyMapping::poll_input(input_);
+        input_ = input->clear_frame_state();
+        if (input->key_states.at(KeyMapping::InputKey::QUIT).is_pressed) {
+            running_ = false;
         }
     }
 };

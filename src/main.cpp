@@ -6,10 +6,6 @@
 #endif
 import Game;
 
-SDL_Window* window = nullptr;
-SDL_Renderer* renderer = nullptr;
-bool quit = false;
-
 void main_loop_tick(void* arg) {
     Game* game = static_cast<Game*>(arg);
     static Uint32 last_time = SDL_GetTicks();
@@ -19,21 +15,7 @@ void main_loop_tick(void* arg) {
     game->tick(delta_time);
 }
 
-tl::expected<std::string, std::string> greeting(bool should_succeed) {
-    if (should_succeed) {
-        return tl::expected<std::string, std::string>("Hello, World!");
-    } else {
-        return tl::unexpected<std::string>("Failed to get greeting.");
-    }
-}
-
 int main(int argc, char* argv[]) {
-    const auto result = greeting(true);
-    if (result) {
-        std::cout << "Greeting: " << *result << std::endl;
-    } else {
-        std::cerr << "Error: " << result.error() << std::endl;
-    }
     // SDLの初期化
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -41,8 +23,8 @@ int main(int argc, char* argv[]) {
     }
 
     // ウィンドウの作成
-    window = SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
-                              SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
 
     if (!window) {
         std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
@@ -51,7 +33,7 @@ int main(int argc, char* argv[]) {
     }
 
     // レンダラーの作成
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
         std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
@@ -63,7 +45,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef __EMSCRIPTEN__
         // Emscriptenのメインループ登録（60fps）
-        emscripten_set_main_loop_arg(main_loop_tick, &game, 60, 1);
+        emscripten_set_main_loop_arg(main_loop_tick, &game, 0, 1);
 #else
         while (game.isRunning()) {
             main_loop_tick(&game);
