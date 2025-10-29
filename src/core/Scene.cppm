@@ -4,7 +4,10 @@ module;
 #include <iostream>
 #include <memory>
 #include <optional>
+import GlobalSetting;
 import Input;
+import Grid;
+import Cell;
 export module Scene;
 
 class IScene {
@@ -27,7 +30,22 @@ namespace scene {
 
 class NextScene final : public IScene {
    public:
-    NextScene() {};
+    NextScene() {
+        const auto setting = global_setting::GlobalSetting::instance();
+        std::vector<std::vector<cell::Cell>> cells;
+        for (int i = 0; i < setting.gridColumns; i++) {
+            for (int j = 0; j < setting.gridRows; j++) {
+            }
+        }
+        const grid::Grid grid = {
+            "1",
+            {0, 0},
+            setting.canvasWidth,
+            setting.canvasHeight,
+            setting.gridRows,
+            setting.gridColumns,
+        };
+    };
     void update(double delta_time) override {};
     void process_input(const input::Input& input) override {};
     void render(SDL_Renderer* renderer) override {
@@ -38,6 +56,9 @@ class NextScene final : public IScene {
     std::optional<std::unique_ptr<IScene>> take_scene_transition() override {
         return std::nullopt;
     };
+
+   private:
+    std::unique_ptr<grid::Grid> grid_;
 };
 
 export class InitialScene final : public IScene {

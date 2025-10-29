@@ -1,7 +1,7 @@
 module;
-export module Position;
+export module Position2D;
 
-export struct Position {
-    const double x;
-    const double y;
+export struct Position2D {
+    const int x;
+    const int y;
 };
