@@ -14,13 +14,13 @@ export struct Grid {
     const int height;
     const int rows;
     const int columns;
-    const std::vector<std::vector<Cell>> cells;
+    const std::vector<std::vector<cell::Cell>> cells;
 };
 export void render(const Grid& grid, SDL_Renderer* renderer) {
     // グリッド全体のオフセット位置を基準に描画
     for (int row = 0; row < grid.rows; ++row) {
         for (int col = 0; col < grid.columns; ++col) {
-            const Cell& cell = grid.cells[row][col];
+            const cell::Cell& cell = grid.cells[row][col];
 
             // グリッドのオフセットを反映
             SDL_Rect rect;

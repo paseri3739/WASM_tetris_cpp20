@@ -87,7 +87,7 @@ export tl::expected<Cell, std::string> transition(const Cell& cell, CellStatus n
         err += std::string(to_string(next));
         return tl::unexpected(std::move(err));
     }
-    return Cell{cell.x, cell.y, cell.width, cell.height, next};
+    return Cell::create(cell.x, cell.y, cell.width, cell.height, next);
 }
 
 // 明示的ユーティリティ関数群
