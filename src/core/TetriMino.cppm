@@ -28,8 +28,50 @@ constexpr SDL_Colour to_color(TetriminoType type) noexcept {
     return SDL_Colour{255, 255, 255, 255};  // 白（デフォルト）
 };
 
+constexpr std::array<std::array<cell::CellStatus, 4>, 4> get_shape_north(
+    TetriminoType type) noexcept {
+    constexpr auto Filled = cell::CellStatus::Filled;
+    constexpr auto Empty = cell::CellStatus::Empty;
+    switch (type) {
+        case TetriminoType::I:
+            return {{{Empty, Empty, Empty, Empty},
+                     {Filled, Filled, Filled, Filled},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::O:
+            return {{{Empty, Filled, Filled, Empty},
+                     {Empty, Filled, Filled, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::T:
+            return {{{Empty, Filled, Empty, Empty},
+                     {Filled, Filled, Filled, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::S:
+            return {{{Empty, Filled, Filled, Empty},
+                     {Filled, Filled, Empty, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::Z:
+            return {{{Filled, Filled, Empty, Empty},
+                     {Empty, Filled, Filled, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::J:
+            return {{{Filled, Empty, Empty, Empty},
+                     {Filled, Filled, Filled, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+        case TetriminoType::L:
+            return {{{Empty, Empty, Filled, Empty},
+                     {Filled, Filled, Filled, Empty},
+                     {Empty, Empty, Empty, Empty},
+                     {Empty, Empty, Empty, Empty}}};
+    }
+};
+
 export struct Tetrimino {
-    const SDL_Color color;
     const TetriminoType type;
     const TetriminoStatus status;
     const Position2D position;
