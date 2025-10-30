@@ -1,5 +1,6 @@
 module;
 #include <SDL2/SDL.h>
+#include <iostream>
 #include <memory>
 #include <optional>
 export module Scene;
@@ -28,22 +29,7 @@ namespace scene {
 
 class NextScene final : public IScene {
    public:
-    NextScene() {
-        const auto setting = global_setting::GlobalSetting::instance();
-        std::vector<std::vector<cell::Cell>> cells;
-        for (int i = 0; i < setting.gridColumns; i++) {
-            for (int j = 0; j < setting.gridRows; j++) {
-            }
-        }
-        const grid::Grid grid = {
-            "1",
-            {0, 0},
-            setting.canvasWidth,
-            setting.canvasHeight,
-            setting.gridRows,
-            setting.gridColumns,
-        };
-    };
+    NextScene() {};
     void update(double delta_time) override {};
     void process_input(const input::Input& input) override {};
     void render(SDL_Renderer* renderer) override {
@@ -61,7 +47,23 @@ class NextScene final : public IScene {
 
 export class InitialScene final : public IScene {
    public:
-    InitialScene() {};
+    InitialScene() {
+        global_setting::GlobalSetting& setting = global_setting::GlobalSetting::instance();
+        std::vector<std::vector<cell::Cell>> cells;
+        for (int i = 0; i < setting.gridColumns; i++) {
+            for (int j = 0; j < setting.gridRows; j++) {
+                cells.push_back(std::vector<cell::Cell>{});
+            }
+        }
+        const auto grid =
+            grid::Grid::create("initial_scene_grid", {0, 0}, setting.canvasWidth,
+                               setting.canvasHeight, setting.gridRows, setting.gridColumns);
+        if (grid.has_value()) {
+            grid_ = std::make_unique<grid::Grid>(std::move(grid).value());
+        } else {
+            std::cerr << "Failed to create grid: " << grid.error() << std::endl;
+        }
+    };
     void update(double delta_time) override {
         // nothing
     };
@@ -72,23 +74,24 @@ export class InitialScene final : public IScene {
         input_ = std::make_shared<input::Input>(input);
     };
     void render(SDL_Renderer* renderer) override {
-        // 背景を黒にクリア
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        // 背景を白にクリア
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
-        // 線の色（赤）
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        // // 線の色（赤）
+        // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        // 三角形の3点を定義
-        SDL_Point p1 = {320, 100};
-        SDL_Point p2 = {220, 380};
-        SDL_Point p3 = {420, 380};
+        // // 三角形の3点を定義
+        // SDL_Point p1 = {320, 100};
+        // SDL_Point p2 = {220, 380};
+        // SDL_Point p3 = {420, 380};
 
-        // 3本の線で三角形を描画
-        SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
-        SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
-        SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
+        // // 3本の線で三角形を描画
+        // SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
+        // SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
+        // SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
 
+        grid::render(*grid_, renderer);
         // 描画内容を画面に反映
         SDL_RenderPresent(renderer);
     };
@@ -101,6 +104,7 @@ export class InitialScene final : public IScene {
 
    private:
     std::shared_ptr<const input::Input> input_;
+    std::unique_ptr<grid::Grid> grid_;
 };
 
 /**
