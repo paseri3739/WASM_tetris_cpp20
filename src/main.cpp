@@ -6,6 +6,7 @@
 #endif
 import Game;
 import Scene;
+import GlobalSetting;
 
 void main_loop_tick(void* arg) {
     Game* game = static_cast<Game*>(arg);
@@ -24,8 +25,10 @@ int main(int argc, char* argv[]) {
     }
 
     // ウィンドウの作成
+    const auto global_setting = global_setting::GlobalSetting::instance();
     SDL_Window* window = SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
-                                          SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+                                          SDL_WINDOWPOS_CENTERED, global_setting.canvasWidth,
+                                          global_setting.canvasHeight, SDL_WINDOW_SHOWN);
 
     if (!window) {
         std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
