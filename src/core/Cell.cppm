@@ -3,8 +3,8 @@ module;
 #include <string>
 #include <string_view>
 #include <tl/expected.hpp>
-import GlobalSetting;
 export module Cell;
+import GlobalSetting;
 
 namespace cell {
 // 状態

@@ -2,9 +2,9 @@ module;
 #include <SDL2/SDL.h>
 #include <string>
 #include <vector>
+export module Grid;
 import Position2D;
 import Cell;
-export module Grid;
 
 namespace grid {
 export struct Grid {

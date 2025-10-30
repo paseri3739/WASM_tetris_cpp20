@@ -1,12 +1,10 @@
 {
-    "clangd.path": "clangd",
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/build",
-        "--query-driver=${env:EMSCRIPTEN_HOME}/upstream/bin/clang++,${env:EMSCRIPTEN_HOME}/upstream/emscripten/em++,/opt/homebrew/opt/llvm/bin/clang++",
+        "--query-driver=/usr/bin/clang++",
         "--all-scopes-completion",
         "--header-insertion=iwyu",
         "--experimental-modules-support",
-        "--debug-modules-builder",
         "--log=verbose"
     ],
     "cmake.copyCompileCommands": "${workspaceFolder}/build/compile_commands.json",

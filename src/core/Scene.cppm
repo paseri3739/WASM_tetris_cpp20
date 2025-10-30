@@ -1,14 +1,12 @@
 module;
 #include <SDL2/SDL.h>
-
-#include <iostream>
 #include <memory>
 #include <optional>
+export module Scene;
 import GlobalSetting;
 import Input;
 import Grid;
 import Cell;
-export module Scene;
 
 class IScene {
    public:

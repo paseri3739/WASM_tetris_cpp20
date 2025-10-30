@@ -1,10 +1,9 @@
 module;
 #include <SDL2/SDL.h>
-#include <iostream>
 #include <memory>
+export module Game;
 import Input;
 import Scene;
-export module Game;
 
 export class Game {
    public:
