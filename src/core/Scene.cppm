@@ -71,10 +71,10 @@ export class InitialScene final : public IScene {
             std::cerr << "Failed to get cell position: " << cell_pos.error() << std::endl;
         }
         const auto tetrimino = tetrimino::Tetrimino{
-            .type = tetrimino::TetriminoType::Z,
-            .status = tetrimino::TetriminoStatus::Falling,
-            .direction = tetrimino::TetriminoDirection::North,
-            .position = cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0},
+            tetrimino::TetriminoType::Z,
+            tetrimino::TetriminoStatus::Falling,
+            tetrimino::TetriminoDirection::North,
+            cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0},
         };
 
         tetrimino_ = std::make_unique<tetrimino::Tetrimino>(std::move(tetrimino));

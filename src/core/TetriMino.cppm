@@ -122,6 +122,9 @@ export struct Tetrimino {
     const TetriminoStatus status;
     const TetriminoDirection direction;
     const Position2D position;
+    Tetrimino(TetriminoType type, TetriminoStatus status, TetriminoDirection direction,
+              Position2D position)
+        : type(type), status(status), direction(direction), position(position) {}
 };
 
 export void render(const Tetrimino& tetrimino, SDL_Renderer* renderer) {
