@@ -83,6 +83,15 @@ export struct Grid {
           cells(std::move(cells)) {}
 };
 
+export tl::expected<Position2D, std::string> get_cell_position(const Grid& grid, int row,
+                                                               int column) {
+    if (row < 0 || row >= grid.rows || column < 0 || column >= grid.columns) {
+        return tl::make_unexpected("row or column out of bounds");
+    }
+    const cell::Cell& cell = grid.cells[row][column];
+    return Position2D{cell.x, cell.y};
+}
+
 export void render(const Grid& grid, SDL_Renderer* renderer) {
     // グリッド全体のオフセット位置を基準に描画
     for (int row = 0; row < grid.rows; ++row) {

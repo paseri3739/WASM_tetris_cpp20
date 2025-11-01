@@ -8,7 +8,8 @@ import GlobalSetting;
 import Input;
 import Grid;
 import Cell;
-
+import TetriMino;
+import Position2D;
 class IScene {
    public:
     virtual ~IScene() = default;
@@ -58,11 +59,25 @@ export class InitialScene final : public IScene {
         const auto grid =
             grid::Grid::create("initial_scene_grid", {0, 0}, setting.canvasWidth,
                                setting.canvasHeight, setting.gridRows, setting.gridColumns);
+
         if (grid.has_value()) {
             grid_ = std::make_unique<grid::Grid>(std::move(grid).value());
         } else {
             std::cerr << "Failed to create grid: " << grid.error() << std::endl;
         }
+
+        const auto cell_pos = grid::get_cell_position(*grid_, 3, 3);
+        if (!cell_pos) {
+            std::cerr << "Failed to get cell position: " << cell_pos.error() << std::endl;
+        }
+        const auto tetrimino = tetrimino::Tetrimino{
+            .type = tetrimino::TetriminoType::Z,
+            .status = tetrimino::TetriminoStatus::Falling,
+            .direction = tetrimino::TetriminoDirection::North,
+            .position = cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0},
+        };
+
+        tetrimino_ = std::make_unique<tetrimino::Tetrimino>(std::move(tetrimino));
     };
     void update(double delta_time) override {
         // nothing
@@ -77,21 +92,9 @@ export class InitialScene final : public IScene {
         // 背景を白にクリア
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
-
-        // // 線の色（赤）
-        // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-
-        // // 三角形の3点を定義
-        // SDL_Point p1 = {320, 100};
-        // SDL_Point p2 = {220, 380};
-        // SDL_Point p3 = {420, 380};
-
-        // // 3本の線で三角形を描画
-        // SDL_RenderDrawLine(renderer, p1.x, p1.y, p2.x, p2.y);
-        // SDL_RenderDrawLine(renderer, p2.x, p2.y, p3.x, p3.y);
-        // SDL_RenderDrawLine(renderer, p3.x, p3.y, p1.x, p1.y);
-
         grid::render(*grid_, renderer);
+        tetrimino::render(*tetrimino_, renderer);
+        tetrimino::render_grid_around(*tetrimino_, renderer);
         // 描画内容を画面に反映
         SDL_RenderPresent(renderer);
     };
@@ -105,6 +108,7 @@ export class InitialScene final : public IScene {
    private:
     std::shared_ptr<const input::Input> input_;
     std::unique_ptr<grid::Grid> grid_;
+    std::unique_ptr<tetrimino::Tetrimino> tetrimino_;
 };
 
 /**
