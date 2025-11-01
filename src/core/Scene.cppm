@@ -70,10 +70,11 @@ export class InitialScene final : public IScene {
         if (!cell_pos) {
             std::cerr << "Failed to get cell position: " << cell_pos.error() << std::endl;
         }
+
         const auto tetrimino = tetrimino::Tetrimino{
             tetrimino::TetriminoType::Z,
             tetrimino::TetriminoStatus::Falling,
-            tetrimino::TetriminoDirection::North,
+            tetrimino::TetriminoDirection::East,
             cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0},
         };
 

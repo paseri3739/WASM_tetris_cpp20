@@ -60,17 +60,17 @@ constexpr std::array<Coord, 4> get_cells_east(TetriminoType type) noexcept {
         case TetriminoType::I:
             return {Coord{0, 2}, Coord{1, 2}, Coord{2, 2}, Coord{3, 2}};
         case TetriminoType::O:
-            return {Coord{1, 2}, Coord{1, 3}, Coord{2, 2}, Coord{2, 3}};
+            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
         case TetriminoType::T:
-            return {Coord{0, 2}, Coord{1, 2}, Coord{1, 3}, Coord{2, 2}};
+            return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
         case TetriminoType::S:
-            return {Coord{0, 2}, Coord{1, 2}, Coord{1, 3}, Coord{2, 3}};
+            return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
         case TetriminoType::Z:
-            return {Coord{0, 3}, Coord{1, 2}, Coord{1, 3}, Coord{2, 2}};
+            return {Coord{0, 2}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
         case TetriminoType::J:
-            return {Coord{0, 2}, Coord{0, 3}, Coord{1, 2}, Coord{2, 2}};
+            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{2, 1}};
         case TetriminoType::L:
-            return {Coord{0, 2}, Coord{1, 2}, Coord{2, 2}, Coord{2, 3}};
+            return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
     }
     return {};
 }
