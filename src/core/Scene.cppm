@@ -74,7 +74,7 @@ export class InitialScene final : public IScene {
         const auto tetrimino = tetrimino::Tetrimino{
             tetrimino::TetriminoType::Z,
             tetrimino::TetriminoStatus::Falling,
-            tetrimino::TetriminoDirection::East,
+            tetrimino::TetriminoDirection::West,
             cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0},
         };
 

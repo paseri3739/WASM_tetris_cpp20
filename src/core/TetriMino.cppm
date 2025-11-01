@@ -83,15 +83,15 @@ constexpr std::array<Coord, 4> get_cells_south(TetriminoType type) noexcept {
         case TetriminoType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
         case TetriminoType::T:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
         case TetriminoType::S:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{1, 1}, Coord{1, 2}, Coord{2, 0}, Coord{2, 1}};
         case TetriminoType::Z:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{1, 0}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
         case TetriminoType::J:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
         case TetriminoType::L:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 0}};
     }
     return {};
 }
@@ -104,15 +104,15 @@ constexpr std::array<Coord, 4> get_cells_west(TetriminoType type) noexcept {
         case TetriminoType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
         case TetriminoType::T:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
         case TetriminoType::S:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{0, 0}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
         case TetriminoType::Z:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 0}};
         case TetriminoType::J:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{0, 1}, Coord{1, 1}, Coord{2, 0}, Coord{2, 1}};
         case TetriminoType::L:
-            return {Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}, Coord{-1, -1}};
+            return {Coord{0, 0}, Coord{0, 1}, Coord{1, 1}, Coord{2, 1}};
     }
     return {};
 }
