@@ -1,6 +1,5 @@
 module;
 #include <SDL2/SDL.h>
-#include <format>
 #include <string>
 #include <tl/expected.hpp>
 #include <vector>
@@ -90,6 +89,18 @@ export tl::expected<Position2D, std::string> get_cell_position(const Grid& grid,
     }
     const cell::Cell& cell = grid.cells[row][column];
     return Position2D{cell.x, cell.y};
+}
+
+export tl::expected<ColumnRow, std::string> get_cell_column_row(const Grid& grid,
+                                                                const Position2D& position) {
+    if (position.x < grid.position.x || position.x >= grid.position.x + grid.width ||
+        position.y < grid.position.y || position.y >= grid.position.y + grid.height) {
+        return tl::make_unexpected("position out of grid bounds");
+    }
+    const auto setting = global_setting::GlobalSetting::instance();
+    const int column = (position.x - grid.position.x) / setting.cellWidth;
+    const int row = (position.y - grid.position.y) / setting.cellHeight;
+    return ColumnRow{column, row};
 }
 
 export void render(const Grid& grid, SDL_Renderer* renderer) {
