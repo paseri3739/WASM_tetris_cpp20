@@ -48,7 +48,7 @@ inline const std::pair<SDL_Keycode, InputKey> SDL_TO_INPUT_KEY_MAP[] = {
  * @param code SDL_Keycode
  * @return std::optional<InputKey> 変換結果（存在しない場合は std::nullopt）
  */
-inline std::optional<InputKey> to_input_key(SDL_Keycode code) {
+export inline std::optional<InputKey> to_input_key(SDL_Keycode code) {
     for (const auto& [sdl, input] : SDL_TO_INPUT_KEY_MAP) {
         if (sdl == code) return input;
     }
@@ -190,47 +190,4 @@ export struct Input {
     }
 };
 
-/**
- * 抽象入力を取得する関数
- * @param previous_input 以前の入力状態(エッジ検出のために使用)
- * @return 新しい入力状態
- */
-export std::shared_ptr<const Input> poll_input(std::shared_ptr<const Input> previous_input) {
-    // 初回フレームなど、previous_input が null の場合に備える
-    if (!previous_input) {
-        previous_input = std::make_shared<const Input>();
-    }
-
-    auto input = std::make_shared<Input>(*previous_input);  // コピーして操作対象にする
-    for (auto& [_, state] : input->key_states) {
-        state.is_pressed = false;
-        state.is_released = false;
-    }
-
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            input->key_states[InputKey::QUIT].is_pressed = true;
-            continue;
-        }
-
-        if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) continue;
-
-        auto maybe_key = input::to_input_key(event.key.keysym.sym);
-        if (!maybe_key.has_value()) continue;
-
-        InputKey key = maybe_key.value();
-        InputState& state = input->key_states[key];
-
-        if (event.type == SDL_KEYDOWN) {
-            if (!state.is_held) state.is_pressed = true;
-            state.is_held = true;
-        } else {
-            state.is_held = false;
-            state.is_released = true;
-        }
-    }
-
-    return input;
-}
 }  // namespace input
