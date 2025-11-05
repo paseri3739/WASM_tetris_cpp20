@@ -50,7 +50,7 @@ export class Game final {
         }
         renderer_.reset(raw_renderer);
 
-        auto initial_scene = std::make_unique<scene::InitialScene>(*setting_);
+        auto initial_scene = std::make_unique<scene::InitialScene>(setting_);
         scene_manager_ = std::make_unique<scene::SceneManager>(std::move(initial_scene));
 
         initialized_ = true;
