@@ -48,9 +48,8 @@ class NextScene final : public IScene {
 
 export class InitialScene final : public IScene {
    public:
-    InitialScene() {
-        setting_ = std::make_shared<global_setting::GlobalSetting>(
-            global_setting::GlobalSetting::instance());
+    InitialScene(global_setting::GlobalSetting const& gs) {
+        setting_ = std::make_shared<global_setting::GlobalSetting>(gs);
 
         const auto grid = grid::Grid::create(
             "initial_scene_grid", {0, 0}, setting_->canvasWidth, setting_->canvasHeight,

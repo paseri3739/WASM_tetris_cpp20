@@ -1,21 +1,73 @@
 module;
 #include <SDL2/SDL.h>
+#include <iostream>  // エラーログ用
 #include <memory>
 export module Game;
 import Input;
-import Scene;
+import Scene;         // scene::InitialScene / scene::SceneManager を参照
+import GlobalSetting; // global_setting::GlobalSetting を参照
 
-export class Game {
+export class Game final {
    public:
-    Game(SDL_Window* window, SDL_Renderer* renderer,
-         std::unique_ptr<scene::SceneManager> scene_manager)
-        : window_(window, SDL_DestroyWindow),
-          renderer_(renderer, SDL_DestroyRenderer),
-          scene_manager_(std::move(scene_manager)) {}
-    [[nodiscard]]
-    bool isRunning() const {
-        return running_;
+    // SDLとWindow/Rendererの生成、InitialScene→SceneManagerの組み立てをここで行う
+    explicit Game(const global_setting::GlobalSetting& gs)
+        : window_(nullptr, SDL_DestroyWindow),
+          renderer_(nullptr, SDL_DestroyRenderer),
+          scene_manager_(nullptr),
+          input_(nullptr),
+          running_(true),
+          initialized_(false) {
+        // SDLの初期化
+        // （元コメントを尊重し、責務移譲後も同旨のコメントを保持）
+        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+            std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+            running_ = false;
+            return;
+        }
+
+        // ウィンドウの作成
+        SDL_Window* raw_window = SDL_CreateWindow(
+            "SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            gs.canvasWidth, gs.canvasHeight, SDL_WINDOW_SHOWN);
+        if (!raw_window) {
+            std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+            running_ = false;
+            SDL_Quit();
+            return;
+        }
+        window_.reset(raw_window);
+
+        // レンダラーの作成
+        SDL_Renderer* raw_renderer =
+            SDL_CreateRenderer(window_.get(), -1, SDL_RENDERER_ACCELERATED);
+        if (!raw_renderer) {
+            std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError()
+                      << std::endl;
+            window_.reset();
+            SDL_Quit();
+            running_ = false;
+            return;
+        }
+        renderer_.reset(raw_renderer);
+
+        // InitialSceneはGameが直接インスタンス化
+        auto initial_scene = std::make_unique<scene::InitialScene>(gs);
+        scene_manager_ = std::make_unique<scene::SceneManager>(std::move(initial_scene));
+
+        initialized_ = true;
     }
+
+    ~Game() {
+        // ループ終了後、Gameのデストラクタで
+        // SDL_DestroyRenderer と SDL_DestroyWindow が自動的に呼ばれます。
+        renderer_.reset();
+        window_.reset();
+        SDL_Quit();
+    }
+
+    [[nodiscard]] bool isRunning() const { return running_; }
+    [[nodiscard]] bool isInitialized() const { return initialized_; }
+
     void tick(double delta_time_seconds) {
         this->processInput();
         this->update(delta_time_seconds);
@@ -28,6 +80,8 @@ export class Game {
     std::unique_ptr<scene::SceneManager> scene_manager_;
     std::shared_ptr<const input::Input> input_;
     bool running_ = true;
+    bool initialized_ = false;
+
     void update(double delta_time) {
         // TODO:
         scene_manager_->update(delta_time);
