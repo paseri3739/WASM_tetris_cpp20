@@ -49,11 +49,12 @@ class NextScene final : public IScene {
 export class InitialScene final : public IScene {
    public:
     InitialScene() {
-        global_setting::GlobalSetting& setting = global_setting::GlobalSetting::instance();
+        setting_ = std::make_shared<global_setting::GlobalSetting>(
+            global_setting::GlobalSetting::instance());
 
-        const auto grid =
-            grid::Grid::create("initial_scene_grid", {0, 0}, setting.canvasWidth,
-                               setting.canvasHeight, setting.gridRows, setting.gridColumns);
+        const auto grid = grid::Grid::create(
+            "initial_scene_grid", {0, 0}, setting_->canvasWidth, setting_->canvasHeight,
+            setting_->gridRows, setting_->gridColumns, setting_->cellWidth, setting_->cellHeight);
 
         if (grid.has_value()) {
             grid_ = std::make_unique<grid::Grid>(std::move(grid).value());
@@ -87,8 +88,9 @@ export class InitialScene final : public IScene {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
         grid::render(*grid_, renderer);
-        tetrimino::render(*tetrimino_, renderer);
-        tetrimino::render_grid_around(*tetrimino_, renderer);
+        tetrimino::render(*tetrimino_, setting_->cellWidth, setting_->cellHeight, renderer);
+        tetrimino::render_grid_around(*tetrimino_, renderer, setting_->cellWidth,
+                                      setting_->cellHeight);
         // 描画内容を画面に反映
         SDL_RenderPresent(renderer);
     };
@@ -103,6 +105,7 @@ export class InitialScene final : public IScene {
     std::shared_ptr<const input::Input> input_;
     std::unique_ptr<grid::Grid> grid_;
     std::unique_ptr<tetrimino::Tetrimino> tetrimino_;
+    std::shared_ptr<global_setting::GlobalSetting> setting_;
 };
 
 /**

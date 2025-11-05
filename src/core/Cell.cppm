@@ -19,13 +19,12 @@ export struct Cell {
     const CellStatus status;
     static tl::expected<Cell, std::string> create(int x, int y, int width, int height,
                                                   CellStatus status = CellStatus::Empty) {
-        const auto setting = global_setting::GlobalSetting::instance();
-        if (width != setting.cellWidth) {
-            return tl::make_unexpected("width must be equal to gloal setting");
-        }
-        if (height != setting.cellHeight) {
-            return tl::make_unexpected("height must be equal to gloal setting");
-        }
+        // if (width != setting.cellWidth) {
+        //     return tl::make_unexpected("width must be equal to gloal setting");
+        // }
+        // if (height != setting.cellHeight) {
+        //     return tl::make_unexpected("height must be equal to gloal setting");
+        // }
         return Cell{x, y, width, height, status};
     };
 

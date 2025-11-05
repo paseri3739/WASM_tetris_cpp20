@@ -20,7 +20,8 @@ export struct Grid {
 
     // static を付与
     static tl::expected<Grid, std::string> create(std::string_view id, const Position2D& position,
-                                                  int width, int height, int rows, int columns) {
+                                                  int width, int height, int rows, int columns,
+                                                  int cellWidth, int cellHeight) {
         if (rows <= 0 || columns <= 0) {
             return tl::make_unexpected("rows and columns must be positive");
         }
@@ -28,13 +29,13 @@ export struct Grid {
             return tl::make_unexpected("width and height must be positive");
         }
 
-        const auto setting = global_setting::GlobalSetting::instance();
-        if (width % setting.cellWidth != 0 || height % setting.cellHeight != 0) {
-            return tl::make_unexpected("grid dimensions must be divisible by cell size");
-        }
-        if (width / setting.cellWidth != columns || height / setting.cellHeight != rows) {
-            return tl::make_unexpected("rows/columns must match grid size and cell size");
-        }
+        // auto setting = global_setting::GlobalSetting::instance();
+        // if (width % setting.cellWidth != 0 || height % setting.cellHeight != 0) {
+        //     return tl::make_unexpected("grid dimensions must be divisible by cell size");
+        // }
+        // if (width / setting.cellWidth != columns || height / setting.cellHeight != rows) {
+        //     return tl::make_unexpected("rows/columns must match grid size and cell size");
+        // }
 
         // ここが重要：後から代入しない。挿入時に構築する
         std::vector<std::vector<cell::Cell>> grid_cells;
@@ -45,11 +46,11 @@ export struct Grid {
             row_cells.reserve(columns);
 
             for (int c = 0; c < columns; ++c) {
-                const int cell_x = position.x + c * setting.cellWidth;
-                const int cell_y = position.y + r * setting.cellHeight;
+                const int cell_x = position.x + c * cellWidth;
+                const int cell_y = position.y + r * cellHeight;
 
-                const auto cell_result =
-                    cell::Cell::create(cell_x, cell_y, setting.cellWidth, setting.cellHeight);
+                const auto cell_result = cell::Cell::create(cell_x, cell_y, cellWidth, cellHeight,
+                                                            cell::CellStatus::Empty);
 
                 if (!cell_result.has_value()) {
                     return tl::make_unexpected("failed to create cell at (" + std::to_string(r) +
@@ -92,14 +93,14 @@ export tl::expected<Position2D, std::string> get_cell_position(const Grid& grid,
 }
 
 export tl::expected<ColumnRow, std::string> get_cell_column_row(const Grid& grid,
-                                                                const Position2D& position) {
+                                                                const Position2D& position,
+                                                                int cellWidth, int cellHeight) {
     if (position.x < grid.position.x || position.x >= grid.position.x + grid.width ||
         position.y < grid.position.y || position.y >= grid.position.y + grid.height) {
         return tl::make_unexpected("position out of grid bounds");
     }
-    const auto setting = global_setting::GlobalSetting::instance();
-    const int column = (position.x - grid.position.x) / setting.cellWidth;
-    const int row = (position.y - grid.position.y) / setting.cellHeight;
+    const int column = (position.x - grid.position.x) / cellWidth;
+    const int row = (position.y - grid.position.y) / cellHeight;
     return ColumnRow{column, row};
 }
 

@@ -54,7 +54,7 @@ constexpr std::array<Coord, 4> get_cells_north(TetriminoType type) noexcept {
     return {};  // 到達しない
 }
 
-// E(東): 4x4 グリッド内で N を時計回り 90°回転（(r,c)->(c, 3-r)）した相対座標
+// E(東): 4x4 グリッド内で N を時計回り 90°回転((r,c)->(c, 3-r)）した相対座標
 constexpr std::array<Coord, 4> get_cells_east(TetriminoType type) noexcept {
     switch (type) {
         case TetriminoType::I:
@@ -75,7 +75,7 @@ constexpr std::array<Coord, 4> get_cells_east(TetriminoType type) noexcept {
     return {};
 }
 
-// S(南): 4x4 グリッド内で N を 180°回転（(r,c)->(3-r, 3-c)）
+// S(南): 4x4 グリッド内で N を 180°回転((r,c)->(3-r, 3-c))
 constexpr std::array<Coord, 4> get_cells_south(TetriminoType type) noexcept {
     switch (type) {
         case TetriminoType::I:
@@ -127,7 +127,8 @@ export struct Tetrimino {
         : type(type), status(status), direction(direction), position(position) {}
 };
 
-export void render(const Tetrimino& tetrimino, SDL_Renderer* renderer) {
+export void render(const Tetrimino& tetrimino, int cellWidth, int cellHeight,
+                   SDL_Renderer* renderer) {
     const SDL_Colour color = to_color(tetrimino.type);
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
@@ -152,28 +153,22 @@ export void render(const Tetrimino& tetrimino, SDL_Renderer* renderer) {
             }
             break;
     }
-    const auto setting = global_setting::GlobalSetting::instance();
-    const int cell_width = setting.cellWidth;
-    const int cell_height = setting.cellHeight;
 
     for (const auto& cell : cells) {
-        const int x = tetrimino.position.x + cell.second * cell_width;
-        const int y = tetrimino.position.y + cell.first * cell_height;
-        SDL_Rect rect = {x, y, cell_width, cell_height};
+        const int x = tetrimino.position.x + cell.second * cellWidth;
+        const int y = tetrimino.position.y + cell.first * cellHeight;
+        SDL_Rect rect = {x, y, cellWidth, cellHeight};
         SDL_RenderFillRect(renderer, &rect);
     }
 };
 
 // 4x4 の外枠を含めた格子を描画する。
 // origin は格子の左上ピクセル位置。
-// 枠線色は白、線幅は SDL のデフォルト（1px）。
-export void render_grid_4x4(const Position2D& origin, SDL_Renderer* renderer) {
-    const auto setting = global_setting::GlobalSetting::instance();
-    const int cell_width = setting.cellWidth;
-    const int cell_height = setting.cellHeight;
-
-    const int grid_width = cell_width * 4;
-    const int grid_height = cell_height * 4;
+// 枠線色は白、線幅は SDL のデフォルト(1px)。
+export void render_grid_4x4(const Position2D& origin, SDL_Renderer* renderer, int cellWidth,
+                            int cellHeight) {
+    const int grid_width = cellWidth * 4;
+    const int grid_height = cellHeight * 4;
 
     // 枠線色（白）
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -182,22 +177,23 @@ export void render_grid_4x4(const Position2D& origin, SDL_Renderer* renderer) {
     SDL_Rect frame = {origin.x, origin.y, grid_width, grid_height};
     SDL_RenderDrawRect(renderer, &frame);
 
-    // 内側の縦線（1～3 列目の境界）
+    // 内側の縦線(1~3 列目の境界）
     for (int c = 1; c <= 3; ++c) {
-        const int x = origin.x + c * cell_width;
+        const int x = origin.x + c * cellWidth;
         SDL_RenderDrawLine(renderer, x, origin.y, x, origin.y + grid_height);
     }
 
-    // 内側の横線（1～3 行目の境界）
+    // 内側の横線(1~3 行目の境界）
     for (int r = 1; r <= 3; ++r) {
-        const int y = origin.y + r * cell_height;
+        const int y = origin.y + r * cellHeight;
         SDL_RenderDrawLine(renderer, origin.x, y, origin.x + grid_width, y);
     }
 }
 
 // Tetrimino の 4x4 ローカルグリッド位置に格子を重ねて描画するラッパー。
-export void render_grid_around(const Tetrimino& tetrimino, SDL_Renderer* renderer) {
-    render_grid_4x4(tetrimino.position, renderer);
+export void render_grid_around(const Tetrimino& tetrimino, SDL_Renderer* renderer, int cellWidth,
+                               int cellHeight) {
+    render_grid_4x4(tetrimino.position, renderer, cellWidth, cellHeight);
 }
 
 }  // namespace tetrimino
