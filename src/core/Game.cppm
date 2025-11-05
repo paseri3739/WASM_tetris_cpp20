@@ -81,7 +81,7 @@ export class Game final {
     bool initialized_ = false;
 
     void update(double delta_time) {
-        // TODO:
+        // シーン遷移があれば適用。ロジックはシーンに移譲し、各シーンが次のシーンを決定する。
         if (scene_manager_->is_transitioning()) {
             scene_manager_->apply_scene_change();
         }
