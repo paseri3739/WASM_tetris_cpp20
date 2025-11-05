@@ -82,8 +82,10 @@ export class Game final {
 
     void update(double delta_time) {
         // TODO:
+        if (scene_manager_->is_transitioning()) {
+            scene_manager_->apply_scene_change();
+        }
         scene_manager_->update(delta_time);
-        scene_manager_->apply_scene_change();
     }
     void render() { scene_manager_->render(renderer_.get()); }
 

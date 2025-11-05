@@ -111,11 +111,9 @@ export class SceneManager {
         current_scene_->update(delta_time);
         // 遷移要求をpull
         if (auto opt = current_scene_->take_scene_transition()) {
-            change_scene(std::move(*opt));
+            next_scene_ = std::move(opt.value());  // 次のフレームで適用する
         }
     }
-    void render(SDL_Renderer* renderer) { current_scene_->render(renderer); }
-    void process_input(const input::Input& input) { current_scene_->process_input(input); }
     void apply_scene_change() {
         if (!next_scene_) {
             return;
@@ -123,16 +121,18 @@ export class SceneManager {
         current_scene_ = std::move(next_scene_);
         next_scene_.reset();
     };
+    [[nodiscard]]
+    std::optional<bool> is_transitioning() const {
+        if (next_scene_) {
+            return true;
+        }
+        return std::nullopt;
+    }
+    void render(SDL_Renderer* renderer) { current_scene_->render(renderer); }
+    void process_input(const input::Input& input) { current_scene_->process_input(input); }
 
    private:
     std::unique_ptr<IScene> current_scene_;
     std::unique_ptr<IScene> next_scene_;
-
-    void change_scene(std::unique_ptr<IScene> next) {
-        // nullptrは無視
-        if (next) {
-            next_scene_ = std::move(next);  // 次のフレームで適用する
-        }
-    };
 };
 }  // namespace scene
