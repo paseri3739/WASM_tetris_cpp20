@@ -15,10 +15,9 @@ void main_loop_tick(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-    const auto global_setting = global_setting::GlobalSetting::instance();
     // Gameオブジェクトのスコープを明示的に限定
     {
-        Game game(global_setting);  // ← ここでSDL初期化とウィンドウ/レンダラー生成を内部で行う
+        Game game;  // ← ここでSDL初期化とウィンドウ/レンダラー生成を内部で行う
 
         // 初期化失敗時はループに入らず終了コードを返します
         if (!game.isInitialized()) {

@@ -10,7 +10,7 @@ import GlobalSetting; // global_setting::GlobalSetting を参照
 export class Game final {
    public:
     // SDLとWindow/Rendererの生成、InitialScene→SceneManagerの組み立てをここで行う
-    explicit Game(const global_setting::GlobalSetting& gs)
+    explicit Game()
         : window_(nullptr, SDL_DestroyWindow),
           renderer_(nullptr, SDL_DestroyRenderer),
           scene_manager_(nullptr),
@@ -28,7 +28,7 @@ export class Game final {
         // ウィンドウの作成
         SDL_Window* raw_window = SDL_CreateWindow(
             "SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            gs.canvasWidth, gs.canvasHeight, SDL_WINDOW_SHOWN);
+            setting_->canvasWidth, setting_->canvasHeight, SDL_WINDOW_SHOWN);
         if (!raw_window) {
             std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
             running_ = false;
@@ -51,7 +51,7 @@ export class Game final {
         renderer_.reset(raw_renderer);
 
         // InitialSceneはGameが直接インスタンス化
-        auto initial_scene = std::make_unique<scene::InitialScene>(gs);
+        auto initial_scene = std::make_unique<scene::InitialScene>(*setting_);
         scene_manager_ = std::make_unique<scene::SceneManager>(std::move(initial_scene));
 
         initialized_ = true;
@@ -79,6 +79,8 @@ export class Game final {
     std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer_;
     std::unique_ptr<scene::SceneManager> scene_manager_;
     std::shared_ptr<const input::Input> input_;
+    std::shared_ptr<const global_setting::GlobalSetting> setting_ =
+        std::make_shared<global_setting::GlobalSetting>(10, 20, 30, 30, 60);
     bool running_ = true;
     bool initialized_ = false;
 
