@@ -15,7 +15,10 @@ export class Game final {
           scene_manager_(nullptr),
           input_(nullptr),
           running_(true),
-          initialized_(false) {
+          initialized_(false),
+          setting_(std::make_shared<global_setting::GlobalSetting>(10, 20, 30, 30, 60))
+
+    {
         // SDLの初期化
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
             std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -73,8 +76,7 @@ export class Game final {
     std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer_;
     std::unique_ptr<scene::SceneManager> scene_manager_;
     std::shared_ptr<const input::Input> input_;
-    std::shared_ptr<const global_setting::GlobalSetting> setting_ =
-        std::make_shared<global_setting::GlobalSetting>(10, 20, 30, 30, 60);
+    std::shared_ptr<const global_setting::GlobalSetting> setting_;
     bool running_ = true;
     bool initialized_ = false;
 
