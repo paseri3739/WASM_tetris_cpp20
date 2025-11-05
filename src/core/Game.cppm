@@ -4,12 +4,11 @@ module;
 #include <memory>
 export module Game;
 import Input;
-import Scene;         // scene::InitialScene / scene::SceneManager を参照
-import GlobalSetting; // global_setting::GlobalSetting を参照
+import Scene;
+import GlobalSetting;
 
 export class Game final {
    public:
-    // SDLとWindow/Rendererの生成、InitialScene→SceneManagerの組み立てをここで行う
     explicit Game()
         : window_(nullptr, SDL_DestroyWindow),
           renderer_(nullptr, SDL_DestroyRenderer),
@@ -18,7 +17,6 @@ export class Game final {
           running_(true),
           initialized_(false) {
         // SDLの初期化
-        // （元コメントを尊重し、責務移譲後も同旨のコメントを保持）
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
             std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
             running_ = false;
@@ -37,7 +35,6 @@ export class Game final {
         }
         window_.reset(raw_window);
 
-        // レンダラーの作成
         SDL_Renderer* raw_renderer =
             SDL_CreateRenderer(window_.get(), -1, SDL_RENDERER_ACCELERATED);
         if (!raw_renderer) {
@@ -50,7 +47,6 @@ export class Game final {
         }
         renderer_.reset(raw_renderer);
 
-        // InitialSceneはGameが直接インスタンス化
         auto initial_scene = std::make_unique<scene::InitialScene>(*setting_);
         scene_manager_ = std::make_unique<scene::SceneManager>(std::move(initial_scene));
 
@@ -58,8 +54,6 @@ export class Game final {
     }
 
     ~Game() {
-        // ループ終了後、Gameのデストラクタで
-        // SDL_DestroyRenderer と SDL_DestroyWindow が自動的に呼ばれます。
         renderer_.reset();
         window_.reset();
         SDL_Quit();
