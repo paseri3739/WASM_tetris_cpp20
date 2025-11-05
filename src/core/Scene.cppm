@@ -20,7 +20,12 @@ class IScene {
      * シーン遷移します
      * @return 次のシーン
      */
-    virtual std::optional<std::unique_ptr<IScene>> take_scene_transition() = 0;
+    std::optional<std::unique_ptr<IScene>> take_scene_transition() {
+        if (pending_scene_) {
+            return std::move(pending_scene_);
+        }
+        return std::nullopt;
+    };
 
    protected:
     std::unique_ptr<IScene> pending_scene_;  // 次のシーンへの遷移要求を保持
@@ -38,12 +43,6 @@ class NextScene final : public IScene {
         SDL_RenderClear(renderer);
         SDL_RenderPresent(renderer);
     };
-    std::optional<std::unique_ptr<IScene>> take_scene_transition() override {
-        return std::nullopt;
-    };
-
-   private:
-    std::unique_ptr<grid::Grid> grid_;
 };
 
 export class InitialScene final : public IScene {
@@ -92,12 +91,6 @@ export class InitialScene final : public IScene {
                                       setting_->cellHeight);
         // 描画内容を画面に反映
         SDL_RenderPresent(renderer);
-    };
-    std::optional<std::unique_ptr<IScene>> take_scene_transition() override {
-        if (pending_scene_) {
-            return std::move(pending_scene_);
-        }
-        return std::nullopt;
     };
 
    private:
