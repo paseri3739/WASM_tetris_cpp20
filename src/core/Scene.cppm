@@ -14,13 +14,16 @@ import Position2D;
 // =============================
 export namespace scene {
 
+// フレームワークSTART
 // フレーム毎に渡す不変の環境
 struct Env {
     const input::Input& input;
     const global_setting::GlobalSetting& setting;
     double dt;
 };
+// フレームワークEND
 
+// ユーザーが実装する範囲 START
 // 各シーンの「純粋データ」
 struct InitialData {
     std::shared_ptr<const global_setting::GlobalSetting> setting;
@@ -164,7 +167,9 @@ inline void render(const ThirdData& /*s*/, SDL_Renderer* renderer) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 }
+// ユーザーが実装する範囲 END
 
+// フレームワーク側 START
 // ディスパッチ:1ステップ更新 / 描画
 inline Scene step(Scene current, const Env& env) {
     return std::visit([&](auto const& ss) -> Scene { return update(ss, env); }, current);
@@ -173,5 +178,6 @@ inline Scene step(Scene current, const Env& env) {
 inline void draw(const Scene& current, SDL_Renderer* r) {
     std::visit([&](auto const& ss) { render(ss, r); }, current);
 }
+// フレームワーク側 END
 
 }  // namespace scene
