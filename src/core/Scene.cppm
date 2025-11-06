@@ -2,7 +2,6 @@ module;
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <memory>
-#include <optional>
 export module Scene;
 import GlobalSetting;
 import Input;
@@ -10,129 +9,169 @@ import Grid;
 import Cell;
 import TetriMino;
 import Position2D;
-class IScene {
-   public:
-    virtual ~IScene() = default;
-    virtual void update(double delta_time) = 0;
-    virtual void process_input(const input::Input& input) = 0;
-    virtual void render(SDL_Renderer* renderer) = 0;
-    /**
-     * シーン遷移します
-     * @return 次のシーン
-     */
-    std::optional<std::unique_ptr<IScene>> take_scene_transition() {
-        if (pending_scene_) {
-            return std::move(pending_scene_);
-        }
-        return std::nullopt;
-    };
+// =============================
+// シーン(関数型)定義:variant ベース
+// =============================
+export namespace scene {
 
-   protected:
-    std::unique_ptr<IScene> pending_scene_;  // 次のシーンへの遷移要求を保持
+// フレーム毎に渡す不変の環境
+struct Env {
+    const input::Input& input;
+    const global_setting::GlobalSetting& setting;
+    double dt;
 };
 
-namespace scene {
+// 各シーンの「純粋データ」
+struct InitialData {
+    std::shared_ptr<const global_setting::GlobalSetting> setting;
+    std::unique_ptr<grid::Grid> grid;
+    std::unique_ptr<tetrimino::Tetrimino> tetrimino;
 
-class NextScene final : public IScene {
-   public:
-    NextScene() {};
-    void update(double delta_time) override {};
-    void process_input(const input::Input& input) override {};
-    void render(SDL_Renderer* renderer) override {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-        SDL_RenderClear(renderer);
-        SDL_RenderPresent(renderer);
-    };
-};
+    // 追加: デフォルト
+    InitialData() = default;
 
-export class InitialScene final : public IScene {
-   public:
-    InitialScene(std::shared_ptr<const global_setting::GlobalSetting> gs) {
-        setting_ = gs;
+    // 追加: ディープコピー用コピーコンストラクタ
+    InitialData(const InitialData& other)
+        : setting(other.setting),
+          grid(other.grid ? std::make_unique<grid::Grid>(*other.grid) : nullptr),
+          tetrimino(other.tetrimino ? std::make_unique<tetrimino::Tetrimino>(*other.tetrimino)
+                                    : nullptr) {}
 
-        const auto grid = grid::Grid::create(
-            "initial_scene_grid", {0, 0}, setting_->canvasWidth, setting_->canvasHeight,
-            setting_->gridRows, setting_->gridColumns, setting_->cellWidth, setting_->cellHeight);
-
-        if (grid.has_value()) {
-            grid_ = std::make_unique<grid::Grid>(std::move(grid).value());
-        } else {
-            std::cerr << "Failed to create grid: " << grid.error() << std::endl;
-        }
-
-        const auto cell_pos = grid::get_cell_position(*grid_, 3, 3);
-        if (!cell_pos) {
-            std::cerr << "Failed to get cell position: " << cell_pos.error() << std::endl;
-        }
-
-        const auto tetrimino =
-            tetrimino::Tetrimino(tetrimino::TetriminoType::Z, tetrimino::TetriminoStatus::Falling,
-                                 tetrimino::TetriminoDirection::West,
-                                 cell_pos.has_value() ? cell_pos.value() : Position2D{0, 0});
-
-        tetrimino_ = std::make_unique<tetrimino::Tetrimino>(std::move(tetrimino));
-    };
-    void update(double delta_time) override {
-        // nothing
-    };
-    void process_input(const input::Input& input) override {
-        if (input.pressed(input::InputKey::PAUSE)) {
-            pending_scene_ = std::make_unique<NextScene>();
-        }
-        input_ = std::make_shared<input::Input>(input);
-    };
-    void render(SDL_Renderer* renderer) override {
-        // 背景を白にクリア
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderClear(renderer);
-        grid::render(*grid_, renderer);
-        tetrimino::render(*tetrimino_, setting_->cellWidth, setting_->cellHeight, renderer);
-        tetrimino::render_grid_around(*tetrimino_, renderer, setting_->cellWidth,
-                                      setting_->cellHeight);
-        // 描画内容を画面に反映
-        SDL_RenderPresent(renderer);
-    };
-
-   private:
-    std::shared_ptr<const input::Input> input_;
-    std::unique_ptr<grid::Grid> grid_;
-    std::unique_ptr<tetrimino::Tetrimino> tetrimino_;
-    std::shared_ptr<const global_setting::GlobalSetting> setting_;
-};
-
-/**
- * シーンの遷移を管理するクラスです
- */
-export class SceneManager {
-   public:
-    SceneManager(std::unique_ptr<IScene> initial_scene)
-        : current_scene_(std::move(initial_scene)) {}
-    void update(double delta_time) {
-        current_scene_->update(delta_time);
-        // 遷移要求をpull
-        if (auto opt = current_scene_->take_scene_transition()) {
-            next_scene_ = std::move(opt.value());  // 次のフレームで適用する
-        }
+    // 追加: ディープコピー用コピー代入
+    InitialData& operator=(const InitialData& other) {
+        if (this == &other) return *this;
+        setting = other.setting;
+        grid = other.grid ? std::make_unique<grid::Grid>(*other.grid) : nullptr;
+        tetrimino =
+            other.tetrimino ? std::make_unique<tetrimino::Tetrimino>(*other.tetrimino) : nullptr;
+        return *this;
     }
-    void apply_scene_change() {
-        if (!next_scene_) {
-            return;
-        }
-        current_scene_ = std::move(next_scene_);
-        next_scene_.reset();
-    };
-    [[nodiscard]]
-    std::optional<bool> is_transitioning() const {
-        if (next_scene_) {
-            return true;
-        }
-        return std::nullopt;
-    }
-    void render(SDL_Renderer* renderer) { current_scene_->render(renderer); }
-    void process_input(const input::Input& input) { current_scene_->process_input(input); }
 
-   private:
-    std::unique_ptr<IScene> current_scene_;
-    std::unique_ptr<IScene> next_scene_;
+    // 追加: ムーブは従来通り
+    InitialData(InitialData&&) noexcept = default;
+    InitialData& operator=(InitialData&&) noexcept = default;
 };
+
+struct NextData {
+    // 必要であればデータを追加
+};
+
+// 追加: 三つ目のシーン
+struct ThirdData {
+    // 必要であればデータを追加
+};
+
+// すべてのシーンを包含する代数的データ型
+using Scene = std::variant<InitialData, NextData, ThirdData>;
+
+// 初期シーンの生成(旧実装のロジックを移植)
+inline InitialData make_initial(std::shared_ptr<const global_setting::GlobalSetting> gs) {
+    InitialData s{};
+    s.setting = std::move(gs);
+
+    const auto grid_res = grid::Grid::create(
+        "initial_scene_grid", Position2D{0, 0}, s.setting->canvasWidth, s.setting->canvasHeight,
+        s.setting->gridRows, s.setting->gridColumns, s.setting->cellWidth, s.setting->cellHeight);
+
+    if (!grid_res) {
+        std::cerr << "Failed to create grid: " << grid_res.error() << std::endl;
+        const auto grid =
+            grid::Grid::create("fallback", Position2D{0, 0}, s.setting->canvasWidth,
+                               s.setting->canvasHeight, s.setting->gridRows, s.setting->gridColumns,
+                               s.setting->cellWidth, s.setting->cellHeight);
+        // フォールバック(適宜調整)
+        s.grid = std::make_unique<grid::Grid>(grid.value());
+    } else {
+        s.grid = std::make_unique<grid::Grid>(grid_res.value());
+    }
+
+    const auto cell_pos = grid::get_cell_position(*s.grid, 3, 3);
+    if (!cell_pos) {
+        std::cerr << "Failed to get cell position: " << cell_pos.error() << std::endl;
+    }
+
+    auto t = tetrimino::Tetrimino(tetrimino::TetriminoType::Z, tetrimino::TetriminoStatus::Falling,
+                                  tetrimino::TetriminoDirection::West,
+                                  cell_pos ? cell_pos.value() : Position2D{0, 0});
+    s.tetrimino = std::make_unique<tetrimino::Tetrimino>(std::move(t));
+
+    return s;
+}
+
+// --- Initial シーン: update / render ---
+inline Scene update(const InitialData& s, const Env& env) {
+    // 入力に応じて遷移
+    if (env.input.pressed(input::InputKey::PAUSE)) {
+        NextData next{};
+        return Scene{std::move(next)};  // 遷移
+    }
+
+    // 例:物理・落下などの更新があればここで s を複製して書き換え
+    // ディープコピー
+    InitialData updated = s;
+    // ... 更新処理 ...
+
+    return Scene{std::move(updated)};  // 継続
+}
+
+inline void render(const InitialData& s, SDL_Renderer* renderer) {
+    const auto& setting = *s.setting;
+    // 背景を白にクリア
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
+    grid::render(*s.grid, renderer);
+    tetrimino::render(*s.tetrimino, setting.cellWidth, setting.cellHeight, renderer);
+    tetrimino::render_grid_around(*s.tetrimino, renderer, setting.cellWidth, setting.cellHeight);
+    // 描画内容を画面に反映
+    SDL_RenderPresent(renderer);
+}
+
+// --- Next シーン: update / render ---
+inline Scene update(const NextData& s, const Env& env) {
+    // 入力や時間経過に応じた次画面への遷移があればここで返す
+    // 追加: PAUSE が押されたら ThirdData へ遷移
+    if (env.input.pressed(input::InputKey::PAUSE)) {
+        ThirdData third{};
+        return Scene{std::move(third)};
+    }
+    return Scene{s};  // 継続(遷移なし)
+}
+
+inline void render(const NextData& /*s*/, SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+}
+
+// --- Third シーン: update / render ---
+inline Scene update(const ThirdData& s, const Env& env) {
+    // 入力や時間経過に応じた次画面への遷移があればここで返す
+
+    // 追加: PAUSE が押されたら InitialData に戻る
+    if (env.input.pressed(input::InputKey::PAUSE)) {
+        // setting は他シーンと同様に env から渡す
+        InitialData initial =
+            make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
+        return Scene{std::move(initial)};
+    }
+
+    return Scene{s};  // 継続(遷移なし)
+}
+
+inline void render(const ThirdData& /*s*/, SDL_Renderer* renderer) {
+    // 追加: 背景を赤色でクリア
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+}
+
+// ディスパッチ:1ステップ更新 / 描画
+inline Scene step(Scene current, const Env& env) {
+    return std::visit([&](auto const& ss) -> Scene { return update(ss, env); }, current);
+}
+
+inline void draw(const Scene& current, SDL_Renderer* r) {
+    std::visit([&](auto const& ss) { render(ss, r); }, current);
+}
+
 }  // namespace scene

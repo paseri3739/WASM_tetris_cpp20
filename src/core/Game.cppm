@@ -7,16 +7,19 @@ import Input;
 import Scene;
 import GlobalSetting;
 
+// =============================
+// フレーム処理（Game 本体）
+// =============================
 export class Game final {
    public:
     explicit Game()
         : window_(nullptr, SDL_DestroyWindow),
           renderer_(nullptr, SDL_DestroyRenderer),
-          scene_manager_(nullptr),
           input_(nullptr),
           running_(true),
           initialized_(false),
-          setting_(std::make_shared<global_setting::GlobalSetting>(10, 20, 30, 30, 60))
+          setting_(std::make_shared<global_setting::GlobalSetting>(
+              10, 20, 30, 30, 60))  // 旧: Grid 依存に合わせて初期化
 
     {
         // SDLの初期化
@@ -50,8 +53,8 @@ export class Game final {
         }
         renderer_.reset(raw_renderer);
 
-        auto initial_scene = std::make_unique<scene::InitialScene>(setting_);
-        scene_manager_ = std::make_unique<scene::SceneManager>(std::move(initial_scene));
+        // ここで variant ベースの初期シーンを構築
+        scene_ = scene::Scene{scene::make_initial(setting_)};
 
         initialized_ = true;
     }
@@ -74,7 +77,10 @@ export class Game final {
    private:
     std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window_;
     std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer_;
-    std::unique_ptr<scene::SceneManager> scene_manager_;
+
+    // variant 化した現在のシーン
+    scene::Scene scene_;
+
     std::shared_ptr<const input::Input> input_;
     std::shared_ptr<const global_setting::GlobalSetting> setting_;
     bool running_ = true;
@@ -82,12 +88,12 @@ export class Game final {
 
     void update(double delta_time) {
         // シーン遷移があれば適用。ロジックはシーンに移譲し、各シーンが次のシーンを決定する。
-        if (scene_manager_->is_transitioning()) {
-            scene_manager_->apply_scene_change();
-        }
-        scene_manager_->update(delta_time);
+        // → variant 方式では step() が常に次の Scene を返すので、そのまま差し替える。
+        scene::Env env{*input_, *setting_, delta_time};
+        scene_ = scene::step(std::move(scene_), env);
     }
-    void render() { scene_manager_->render(renderer_.get()); }
+
+    void render() { scene::draw(scene_, renderer_.get()); }
 
     void processInput() {
         // ポーリングはGameのみが担当し、他のモジュールは入力状態を受け取るだけにする
@@ -97,7 +103,7 @@ export class Game final {
             running_ = false;
         }
         input_ = input;
-        scene_manager_->process_input(*input);
+        // scene 側への明示的な伝播は不要（Env に束ねて update に渡す）
     }
 
     /**
