@@ -151,6 +151,9 @@ inline tl::expected<Scene, std::string> make_initial(
 // --- Initial シーン: update / render (ECS + TetrisRule::drop)
 // =============================
 // 毎フレームの処理
+// 毎フレームの処理（モナド連鎖で drop 処理を共通化）
+
+// 毎フレームの処理（自然落下の加速方式 + モナド連鎖で分岐集約）
 
 inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 入力に応じて遷移
@@ -170,6 +173,7 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
         // 旧: updated.fall_accumulator は「秒」ベースのアキュムレータ
         // 新: 「セル数」ベースのアキュムレータとして運用（cells accumulator）
         //     → env.dt * rate(cells/sec) を足していき、floor 分だけ 1 セル落下
+        //
         // 旧: updated.input_accumulator は使用しない（自然落下の倍率化に一本化）
         //     ※ 互換のため値は維持するが、ここではリセットのみ行う
         updated.input_accumulator = 0.0;  // 押しっぱなしの離散リピートは廃止
@@ -179,8 +183,11 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
         const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
 
         // ソフトドロップ倍率（押下中に加速）
-        // 必要に応じて設定へ昇格可能。とりあえず固定値。
+        // ※ 設定に昇格していない場合のデフォルト値
         constexpr double kSoftMultiplier = 10.0;
+
+        // 1フレーム当たりの最大落下回数（低FPS時の暴走抑止）
+        constexpr int kMaxDropsPerFrame = 6;
 
         // 入力状態
         const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
@@ -193,14 +200,56 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
         updated.fall_accumulator += env.dt * rate;
 
         // 取りこぼし防止のため整数セル分だけまとめて処理（過剰進行防止に上限を設ける）
-        constexpr int kMaxDropsPerFrame = 6;
         int steps_to_drop = static_cast<int>(std::floor(updated.fall_accumulator));
         if (steps_to_drop > kMaxDropsPerFrame) {
             steps_to_drop = kMaxDropsPerFrame;
         }
         updated.fall_accumulator -= static_cast<double>(steps_to_drop);
 
-        // エンティティの更新
+        // -------------------------------
+        // 以降：モナド連鎖で drop 分岐を集約
+        // -------------------------------
+
+        // 1セル落下の“結果”を Tetrimino 本体ではなく構成要素で返す
+        struct StepComponents {
+            int x;
+            int y;
+            tetrimino::TetriminoStatus status;
+            tetrimino::TetriminoDirection dir;
+        };
+
+        // 不変 Tetrimino を“構成要素”から都度生成するヘルパ
+        auto make_tetr = [](tetrimino::TetriminoType type, tetrimino::TetriminoStatus st,
+                            tetrimino::TetriminoDirection dir, int x, int y) {
+            return tetrimino::Tetrimino{type, st, dir, Position2D{x, y}};
+        };
+
+        // 1セル落下（モナディック）：成功→次の構成要素、衝突/範囲外→Landed
+        // に正規化、未実装→エラー伝播
+        auto drop_onceM = [&](tetrimino::TetriminoType type, const StepComponents& cur)
+            -> tl::expected<StepComponents, tetris_rule::FailReason> {
+            auto cur_tetr = make_tetr(type, cur.status, cur.dir, cur.x, cur.y);
+
+            return tetris_rule::drop(cur_tetr, grid, env)
+                .transform([](const tetrimino::Tetrimino& t) -> StepComponents {
+                    return StepComponents{t.position.x, t.position.y, t.status, t.direction};
+                })
+                .or_else([&](tetris_rule::FailReason e)
+                             -> tl::expected<StepComponents, tetris_rule::FailReason> {
+                    switch (e) {
+                        case tetris_rule::FailReason::OutOfBounds:
+                        case tetris_rule::FailReason::Collision:
+                            // 破壊的代入は不可なので、新しい“構成要素”として Landed を返す
+                            return StepComponents{cur.x, cur.y, tetrimino::TetriminoStatus::Landed,
+                                                  cur.dir};
+                        case tetris_rule::FailReason::NOT_IMPLEMENTED:
+                        default:
+                            return tl::unexpected{e};
+                    }
+                });
+        };
+
+        // ---- エンティティの更新（代入不可問題を回避しつつ分岐を集約）----
         auto view = registry.view<Position, TetriminoMeta, TetriminoTag>();
         for (auto entity : view) {
             auto& pos = view.get<Position>(entity);
@@ -210,55 +259,30 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
                 continue;
             }
 
-            int cur_x = pos.x;
-            int cur_y = pos.y;
-            auto cur_status = meta.status;
-            auto cur_dir = meta.direction;
+            StepComponents out{pos.x, pos.y, meta.status, meta.direction};
 
-            // フレーム先頭では足さない：updated.input_accumulator += env.dt; を削除する
-            // ↓ 代わりに per-entity で扱う
-            // （本方式では input_accumulator 自体を使用しない）
-
-            // 1) 押下瞬間: 即 1 マス落下（現状維持）→
-            // 本方式では「連続レート加速」に一本化するため廃止
-            //    ※ 押下エッジで 1 マス動かしたい場合は、ここに 1 ステップだけ drop を入れるが、
-            //       同フレーム二重進行を避けるため、その場合 steps_to_drop から 1 を差し引くこと。
-
-            // 2) 押しっぱなしの間だけアキュムレータを進め、しきい値を超えるたびに落下
-            //    → 本方式では steps_to_drop を用いて「連続レート」の結果をそのまま反映
-            for (int i = 0; i < steps_to_drop && cur_status == tetrimino::TetriminoStatus::Falling;
-                 ++i) {
-                tetrimino::Tetrimino cur_tetr{meta.type, cur_status, cur_dir,
-                                              Position2D{cur_x, cur_y}};
-
-                if (auto res = tetris_rule::drop(cur_tetr, grid, env)) {
-                    const auto& t = res.value();
-                    cur_x = t.position.x;
-                    cur_y = t.position.y;
-                    cur_status = t.status;
-                    cur_dir = t.direction;
-                } else {
-                    switch (res.error()) {
-                        case tetris_rule::FailReason::OutOfBounds:
-                        case tetris_rule::FailReason::Collision:
-                            cur_status = tetrimino::TetriminoStatus::Landed;
-                            break;
-                        case tetris_rule::FailReason::NOT_IMPLEMENTED:
-                            break;
-                    }
-                    break;  // 失敗したら抜ける
+            // steps_to_drop 回だけモナディックに合成（早期停止を含む）
+            for (int i = 0; i < steps_to_drop; ++i) {
+                if (out.status != tetrimino::TetriminoStatus::Falling) {
+                    break;  // すでに着地なら終了
+                }
+                auto nxt = drop_onceM(meta.type, out);  // 新オブジェクトを“返す”
+                if (!nxt) {
+                    // NOT_IMPLEMENTED 等は現状維持で黙殺（必要ならログ）
+                    // SDL_Log("drop NOT_IMPLEMENTED (entity=%d)", (int)entity);
+                    break;
+                }
+                out = *nxt;  // StepComponents は代入可能（const メンバなし）
+                if (out.status != tetrimino::TetriminoStatus::Falling) {
+                    break;
                 }
             }
 
-            // 3) 自然落下（現状維持だが、こちらは while のままでOK）
-            //    → 旧方式の「秒アキュムレータ >= fall_interval」での while は廃止。
-            //       本方式では上の steps_to_drop でまとめて処理済み。
-
-            // 最終状態を反映
-            pos.x = cur_x;
-            pos.y = cur_y;
-            meta.status = cur_status;
-            meta.direction = cur_dir;
+            // 最終状態を反映（Tetrimino 本体に触れずスカラーだけ更新）
+            pos.x = out.x;
+            pos.y = out.y;
+            meta.status = out.status;
+            meta.direction = out.dir;
         }
     }
 
