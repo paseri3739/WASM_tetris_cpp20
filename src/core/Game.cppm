@@ -2,6 +2,9 @@ module;
 #include <SDL2/SDL.h>
 #include <iostream>  // エラーログ用
 #include <memory>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 export module Game;
 import SceneFramework; // 新規
 import Input;
