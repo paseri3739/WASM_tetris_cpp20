@@ -14,11 +14,6 @@ module;
 
 export module TetrisRule;
 
-// 依存除去: 以下3つの import を削除
-// import TetriMino;
-// import Position2D;
-// import Cell;
-
 import GlobalSetting;
 import SceneFramework;
 import GameKey;
@@ -29,6 +24,7 @@ namespace tetris_rule {
 // =============================
 // エイリアス
 // =============================
+using global_setting::GlobalSetting;
 using scene_fw::Env;
 
 // =============================
@@ -40,7 +36,7 @@ enum class PieceType { I, O, T, S, Z, J, L };
 enum class PieceStatus { Falling, Landed, Merged };
 enum class PieceDirection { North, East, South, West };
 
-// 色ユーティリティ（元 TetriMino.to_color の置換）
+// 色ユーティリティ
 constexpr SDL_Color to_color(PieceType type) noexcept {
     switch (type) {
         case PieceType::I:
@@ -131,9 +127,11 @@ struct GridResource {
     int origin_y{0};
     std::vector<CellStatus> occ;  // row-major
 
-    [[nodiscard]] inline int index(int r, int c) const noexcept { return r * cols + c; }
-    [[nodiscard]] inline SDL_Rect rect_rc(int r, int c) const noexcept {
-        return SDL_Rect{origin_x + c * cellW, origin_y + r * cellH, cellW, cellH};
+    [[nodiscard]] inline int index(int row, int column) const noexcept {
+        return row * cols + column;
+    }
+    [[nodiscard]] inline SDL_Rect rect_rc(int row, int column) const noexcept {
+        return SDL_Rect{origin_x + column * cellW, origin_y + row * cellH, cellW, cellH};
     }
 };
 
@@ -305,7 +303,7 @@ static inline void inputSystem(entt::registry& registry, const input::Input& inp
 }
 
 static inline void hardDropSystem(entt::registry& registry, const GridResource& grid,
-                                  const Env<global_setting::GlobalSetting>& env) {
+                                  const Env<GlobalSetting>& env) {
     auto view = registry.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
@@ -367,7 +365,7 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
 
 // --- 追記: 回転解決（クラシック／壁蹴りなし） ---
 static inline void resolveRotationSystem(entt::registry& registry, const GridResource& grid,
-                                         const scene_fw::Env<global_setting::GlobalSetting>& env) {
+                                         const scene_fw::Env<GlobalSetting>& env) {
     auto view = registry.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
@@ -410,7 +408,7 @@ static inline void resolveRotationSystem(entt::registry& registry, const GridRes
 }
 
 static inline void resolveLateralSystem(entt::registry& registry, const GridResource& grid,
-                                        const Env<global_setting::GlobalSetting>& env) {
+                                        const Env<GlobalSetting>& env) {
     auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
@@ -471,7 +469,7 @@ static inline void gravitySystem(entt::registry& registry, double delta_time) {
 }
 
 static inline void resolveDropSystem(entt::registry& registry, const GridResource& grid,
-                                     const Env<global_setting::GlobalSetting>& env) {
+                                     const Env<GlobalSetting>& env) {
     auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
@@ -514,7 +512,7 @@ static inline void resolveDropSystem(entt::registry& registry, const GridResourc
 }
 
 static inline void lockAndMergeSystem(entt::registry& registry, GridResource& grid,
-                                      const Env<global_setting::GlobalSetting>& env) {
+                                      const Env<GlobalSetting>& env) {
     std::vector<entt::entity> to_fix;
     auto view = registry.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
     for (auto e : view) {
@@ -615,7 +613,7 @@ static inline void lineClearSystem(GridResource& grid) {
 
 // ワールド生成（Result 返しに変更）
 export inline tl::expected<World, std::string> make_world(
-    const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
+    const std::shared_ptr<const GlobalSetting>& gs) {
     if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
 
     World world{};
@@ -664,7 +662,7 @@ export inline tl::expected<World, std::string> make_world(
 }
 
 // 1フレーム更新
-export inline void step_world(const World& w, const Env<global_setting::GlobalSetting>& env) {
+export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
     if (!w.registry) return;
     auto& registry = *w.registry;
     auto* grid = registry.try_get<GridResource>(w.grid_singleton);
