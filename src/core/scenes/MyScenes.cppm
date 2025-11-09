@@ -28,7 +28,7 @@ using Scene = std::variant<InitialData, NextData, ThirdData>;
 
 // 初期シーン生成
 inline tl::expected<Scene, std::string> make_initial(
-    std::shared_ptr<const global_setting::GlobalSetting> gs) {
+    const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
     InitialData s{};
     s.setting = gs;
     const auto world = tetris_rule::make_world(gs);
@@ -44,7 +44,7 @@ inline tl::expected<Scene, std::string> make_initial(
 inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 例：PAUSE で次のシーンへ
     const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
-    if (pause_key && env.input.pressed(*pause_key)) {
+    if (env.input.pressed(*pause_key)) {
         NextData next{};
         return Scene{next};
     }
@@ -62,7 +62,7 @@ inline void render(const InitialData& s, SDL_Renderer* renderer) {
 // --- Next / Third は従来通り最小 ---
 inline Scene update(const NextData& s, const Env<global_setting::GlobalSetting>& env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
-    if (key && env.input.pressed(*key)) {
+    if (env.input.pressed(*key)) {
         ThirdData third{};
         return Scene{third};
     }
@@ -77,9 +77,10 @@ inline void render(const NextData&, SDL_Renderer* renderer) {
 
 inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>& env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
-    if (key && env.input.pressed(*key)) {
-        auto initial = make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
-        if (initial) return initial.value();
+    if (env.input.pressed(*key)) {
+        if (auto initial =
+                make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting)))
+            return initial.value();
     }
     return Scene{s};
 }
@@ -95,8 +96,8 @@ struct Impl {
     using Scene = my_scenes::Scene;
 
     static tl::expected<Scene, std::string> make_initial(
-        std::shared_ptr<const global_setting::GlobalSetting> gs) {
-        return my_scenes::make_initial(std::move(gs));
+        const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
+        return my_scenes::make_initial(gs);
     }
 
     static Scene step(Scene current, const Env<global_setting::GlobalSetting>& env) {
