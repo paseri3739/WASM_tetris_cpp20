@@ -19,6 +19,9 @@ import SceneFramework;
 import GameKey;
 import Input;
 
+// ★ 追加：フレームワーク側の純粋システム実行基盤を import
+import Command;
+
 namespace tetris_rule {
 
 // =============================
@@ -247,96 +250,18 @@ export struct World {
 };
 
 // =============================
-// Systems
+// System 共通のリソース束ね（純粋化用）
 // =============================
 
-static inline void inputSystem(entt::registry& registry, const input::Input& input) {
-    const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
-    auto view = registry.view<ActivePiece, SoftDrop>();
-    for (auto e : view) {
-        auto& sd = view.get<SoftDrop>(e);
-        sd.held = (down_key && input.held(*down_key));
-        // 左右／回転は MoveIntent を別途積む（省略）
+struct TetrisResources {
+    const input::Input& input;
+    const Env<GlobalSetting>& env;
+    entt::entity grid_e{entt::null};
+};
 
-        // --- 修正: 左右は「押下瞬間のみ」1セル分の MoveIntent を積む ---
-        int dx = 0;
-        if (const auto left = game_key::to_sdl_key(game_key::GameKey::LEFT);
-            left && input.pressed(*left))
-            dx -= 1;
-        if (const auto right = game_key::to_sdl_key(game_key::GameKey::RIGHT);
-            right && input.pressed(*right))
-            dx += 1;
-
-        // 同フレームに左右同時押下された場合は相殺（dx=0）
-        if (dx != 0) {
-            auto& mi = registry.get_or_emplace<MoveIntent>(e);
-            mi.dx += dx;
-        }
-        // --- ここまで ---
-
-        // --- 追記: 回転は押下瞬間のみ受理 ---
-        int rot = 0;
-        if (const auto rl = game_key::to_sdl_key(game_key::GameKey::ROTATE_LEFT);
-            rl && input.pressed(*rl))
-            rot -= 1;
-        if (const auto rr = game_key::to_sdl_key(game_key::GameKey::ROTATE_RIGHT);
-            rr && input.pressed(*rr))
-            rot += 1;
-
-        // 同フレームに左右回転同時押下なら相殺（rot=0）
-        if (rot != 0) {
-            auto& rotate_intent = registry.get_or_emplace<RotateIntent>(e);
-            rotate_intent.dir += (rot > 0 ? +1 : -1);  // -1/ +1 だけ使う
-            // 念のため -1,0,+1 の範囲に収める
-            if (rotate_intent.dir > 1) rotate_intent.dir = 1;
-            if (rotate_intent.dir < -1) rotate_intent.dir = -1;
-        }
-        // --- 追記ここまで ---
-
-        // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
-        if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
-            drop && input.pressed(*drop)) {
-            registry.emplace_or_replace<HardDropRequest>(e);
-        }
-        // --- 追記ここまで ---
-    }
-}
-
-static inline void hardDropSystem(entt::registry& registry, const GridResource& grid,
-                                  const Env<GlobalSetting>& env) {
-    auto view = registry.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
-    for (auto e : view) {
-        auto& pos = view.get<Position>(e);
-        auto& meta = view.get<TetriminoMeta>(e);
-
-        const int step_py = env.setting.cellHeight;  // 1セルのピクセル
-        const auto shape = cells_for(meta.type, meta.direction);
-
-        auto can_place = [&](int px, int py) -> bool {
-            for (auto [rr, cc] : shape) {
-                const int col = (px - grid.origin_x) / grid.cellW + cc;
-                const int row = (py - grid.origin_y) / grid.cellH + rr;
-                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
-                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
-            }
-            return true;
-        };
-
-        // 可能な限り下へ
-        int ny = pos.y;
-        while (can_place(pos.x, ny + step_py)) {
-            ny += step_py;
-        }
-        pos.y = ny;
-
-        // 設置：即ロック扱い（次フレームで確実に Merge）
-        meta.status = PieceStatus::Landed;
-        auto& lock_timer = registry.get_or_emplace<LockTimer>(e);
-        lock_timer.sec = kLockDelaySec;
-
-        registry.remove<HardDropRequest>(e);  // 消費
-    }
-}
+// =============================
+// Systems（純粋版）
+// =============================
 
 // --- 追記: 方向遷移のヘルパ ---
 static inline PieceDirection rotate_next(PieceDirection currentDirection, int dir /*-1 or +1*/) {
@@ -363,30 +288,132 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
     return order[idx];
 }
 
+// =============================
+// 入力（純粋）：意図を追加
+// =============================
+static void inputSystem_pure(const entt::registry& view, const TetrisResources& res,
+                             CommandBuffer& out) {
+    const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
+    auto v = view.view<const ActivePiece, const SoftDrop>();
+
+    for (auto e : v) {
+        // SoftDrop held 更新（読み取り専用ビュー → “置換コマンド”）
+        {
+            const auto* sd = view.try_get<SoftDrop>(e);
+            if (!sd) continue;
+            SoftDrop next = *sd;
+            next.held = (down_key && res.input.held(*down_key));
+            out.add(cmd::emplace_or_replace<SoftDrop>(e, next));
+        }
+
+        // 左右／回転は MoveIntent / RotateIntent を押下瞬間のみ積む（元コメント維持）
+        // --- 修正: 左右は「押下瞬間のみ」1セル分の MoveIntent を積む ---
+        int dx = 0;
+        if (const auto left = game_key::to_sdl_key(game_key::GameKey::LEFT);
+            left && res.input.pressed(*left))
+            dx -= 1;
+        if (const auto right = game_key::to_sdl_key(game_key::GameKey::RIGHT);
+            right && res.input.pressed(*right))
+            dx += 1;
+
+        if (dx != 0) {
+            MoveIntent mi{};
+            if (auto* old = view.try_get<MoveIntent>(e)) mi = *old;
+            mi.dx += dx;
+            out.add(cmd::emplace_or_replace<MoveIntent>(e, mi));
+        }
+        // --- ここまで ---
+
+        // --- 追記: 回転は押下瞬間のみ受理 ---
+        int rot = 0;
+        if (const auto rl = game_key::to_sdl_key(game_key::GameKey::ROTATE_LEFT);
+            rl && res.input.pressed(*rl))
+            rot -= 1;
+        if (const auto rr = game_key::to_sdl_key(game_key::GameKey::ROTATE_RIGHT);
+            rr && res.input.pressed(*rr))
+            rot += 1;
+
+        if (rot != 0) {
+            RotateIntent ri{};
+            if (auto* old = view.try_get<RotateIntent>(e)) ri = *old;
+            ri.dir += (rot > 0 ? +1 : -1);  // 念のため -1..+1 に収める
+            if (ri.dir > 1) ri.dir = 1;
+            if (ri.dir < -1) ri.dir = -1;
+            out.add(cmd::emplace_or_replace<RotateIntent>(e, ri));
+        }
+        // --- 追記ここまで ---
+
+        // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
+        if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
+            drop && res.input.pressed(*drop)) {
+            out.add(cmd::emplace_or_replace<HardDropRequest>(e));
+        }
+        // --- 追記ここまで ---
+    }
+}
+
+// =============================
+// 重力（純粋）：FallAccCells と MoveIntent.dy を更新
+// =============================
+static void gravitySystem_pure(const entt::registry& view, const TetrisResources& res,
+                               CommandBuffer& out) {
+    auto v = view.view<const ActivePiece, const Gravity, const FallAccCells, const SoftDrop>();
+    for (auto e : v) {
+        constexpr int kMaxDropsPerFrame = 6;
+        const auto& g = v.get<const Gravity>(e);
+        const auto& sd = v.get<const SoftDrop>(e);
+
+        FallAccCells acc = v.get<const FallAccCells>(e);
+        const double rate = g.rate_cps * (sd.held ? sd.multiplier : 1.0);
+        acc.cells += res.env.dt * rate;
+
+        int steps = static_cast<int>(std::floor(acc.cells));
+        steps = std::max(0, std::min(steps, kMaxDropsPerFrame));
+
+        if (steps > 0) {
+            MoveIntent mi{};
+            if (auto* old = view.try_get<MoveIntent>(e)) mi = *old;
+            mi.dy += steps;
+            acc.cells -= steps;  // ← 発生分だけ減算して蓄積は維持
+
+            out.add(cmd::emplace_or_replace<MoveIntent>(e, mi));
+        }
+
+        // ← 重要: ステップの有無に関わらず、毎フレーム 蓄積を書き戻す
+        out.add(cmd::emplace_or_replace<FallAccCells>(e, acc));
+    }
+}
+
+// =============================
+// 回転解決（純粋）
 // --- 追記: 回転解決（クラシック／壁蹴りなし） ---
-static inline void resolveRotationSystem(entt::registry& registry, const GridResource& grid,
-                                         const scene_fw::Env<GlobalSetting>& env) {
-    auto view = registry.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
-    for (auto e : view) {
-        auto& pos = view.get<Position>(e);
-        auto& meta = view.get<TetriminoMeta>(e);
-        const auto ri = view.get<RotateIntent>(e);
-        registry.remove<RotateIntent>(e);
+// =============================
+static void resolveRotationSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                       CommandBuffer& out) {
+    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    if (!grid) return;
+
+    auto v =
+        view.view<const ActivePiece, const Position, const TetriminoMeta, const RotateIntent>();
+    for (auto e : v) {
+        const auto& pos = v.get<const Position>(e);
+        auto meta = v.get<const TetriminoMeta>(e);  // コピーして書換える
+        const auto& ri = v.get<const RotateIntent>(e);
+        out.add(cmd::remove<RotateIntent>(e));  // 消費
+
         if (ri.dir == 0) continue;
 
-        // Oミノは回転しても形状不変（そのまま成功扱いでも挙動同じ）
         const PieceDirection ndir = (meta.type == PieceType::O)
                                         ? meta.direction
                                         : rotate_next(meta.direction, (ri.dir > 0 ? +1 : -1));
 
         const auto shape = cells_for(meta.type, ndir);
-
         auto can_place = [&](int px, int py) -> bool {
             for (auto [rr, cc] : shape) {
-                const int col = (px - grid.origin_x) / grid.cellW + cc;
-                const int row = (py - grid.origin_y) / grid.cellH + rr;
-                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
-                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+                const int col = (px - grid->origin_x) / grid->cellW + cc;
+                const int row = (py - grid->origin_y) / grid->cellH + rr;
+                if (col < 0 || col >= grid->cols || row < 0 || row >= grid->rows) return false;
+                if (grid->occ[grid->index(row, col)] == CellStatus::Filled) return false;
             }
             return true;
         };
@@ -399,36 +426,46 @@ static inline void resolveRotationSystem(entt::registry& registry, const GridRes
             if (meta.status != PieceStatus::Falling) {
                 meta.status = PieceStatus::Falling;
             }
-            if (registry.any_of<LockTimer>(e)) {
-                registry.remove<LockTimer>(e);
-            }
+            out.add(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
+            out.add(cmd::remove<LockTimer>(e));
         }
         // 置けない場合は不採用（何もしない）
     }
 }
 
-static inline void resolveLateralSystem(entt::registry& registry, const GridResource& grid,
-                                        const Env<GlobalSetting>& env) {
-    auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
-    for (auto e : view) {
-        auto& pos = view.get<Position>(e);
-        auto& meta = view.get<TetriminoMeta>(e);
-        auto* mi = registry.try_get<MoveIntent>(e);
-        if (!mi) continue;
+// =============================
+// 横移動解決（純粋）
+// --- ここから追記: 横 → 縦 の順で解決 ---
+// =============================
+static void resolveLateralSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                      CommandBuffer& out) {
+    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    if (!grid) return;
 
-        int steps = mi->dx;
-        mi->dx = 0;  // 水平方向ぶんはここで消費（垂直は resolveDropSystem に委ねる）
+    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const MoveIntent>();
+    for (auto e : v) {
+        auto pos = v.get<const Position>(e);
+        const auto& meta = v.get<const TetriminoMeta>(e);
+        const auto& mi = v.get<const MoveIntent>(e);
+
+        int steps = mi.dx;
+        // 水平方向ぶんはここで消費（垂直は resolveDrop へ委譲）
+        if (mi.dx != 0) {
+            MoveIntent next = mi;
+            next.dx = 0;
+            out.add(cmd::emplace_or_replace<MoveIntent>(e, next));
+        }
         if (steps == 0) continue;
 
-        const int step_px = env.setting.cellWidth;
+        const int step_px = res.env.setting.cellWidth;
         const auto shape = cells_for(meta.type, meta.direction);
 
         auto can_place = [&](int px, int py) -> bool {
             for (auto [rr, cc] : shape) {
-                const int col = (px - grid.origin_x) / grid.cellW + cc;
-                const int row = (py - grid.origin_y) / grid.cellH + rr;
-                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
-                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+                const int col = (px - grid->origin_x) / grid->cellW + cc;
+                const int row = (py - grid->origin_y) / grid->cellH + rr;
+                if (col < 0 || col >= grid->cols || row < 0 || row >= grid->rows) return false;
+                if (grid->occ[grid->index(row, col)] == CellStatus::Filled) return false;
             }
             return true;
         };
@@ -442,54 +479,40 @@ static inline void resolveLateralSystem(entt::registry& registry, const GridReso
             }
             pos.x = nx;
         }
+        out.add(cmd::emplace_or_replace<Position>(e, pos));
 
         // 横移動ではロック状態は変更しない（縦落下系に委譲）
     }
 }
 
-static inline void gravitySystem(entt::registry& registry, double delta_time) {
-    auto view = registry.view<ActivePiece, Gravity, FallAccCells, SoftDrop>();
-    for (auto e : view) {
-        constexpr int kMaxDropsPerFrame = 6;
-        auto& g = view.get<Gravity>(e);
-        auto& acc = view.get<FallAccCells>(e);
-        auto& sd = view.get<SoftDrop>(e);
+// =============================
+// 縦落下解決（純粋）
+// =============================
+static void resolveDropSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                   CommandBuffer& out) {
+    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    if (!grid) return;
 
-        const double rate = g.rate_cps * (sd.held ? sd.multiplier : 1.0);
-        acc.cells += delta_time * rate;
+    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const MoveIntent>();
+    for (auto e : v) {
+        auto pos = v.get<const Position>(e);
+        auto meta = v.get<const TetriminoMeta>(e);
+        const auto& mi = v.get<const MoveIntent>(e);
 
-        int steps = static_cast<int>(std::floor(acc.cells));
-        steps = std::max(0, std::min(steps, kMaxDropsPerFrame));
-        if (steps > 0) {
-            auto& mi = registry.get_or_emplace<MoveIntent>(e);
-            mi.dy += steps;
-            acc.cells -= steps;
-        }
-    }
-}
-
-static inline void resolveDropSystem(entt::registry& registry, const GridResource& grid,
-                                     const Env<GlobalSetting>& env) {
-    auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
-    for (auto e : view) {
-        auto& pos = view.get<Position>(e);
-        auto& meta = view.get<TetriminoMeta>(e);
-        auto* mi = registry.try_get<MoveIntent>(e);
-        if (!mi) continue;
-
-        int steps = mi->dy;
-        registry.remove<MoveIntent>(e);
+        int steps = mi.dy;
+        // 縦方向を消費
+        out.add(cmd::remove<MoveIntent>(e));
         if (steps <= 0) continue;
 
-        const int step_px = env.setting.cellHeight;
+        const int step_px = res.env.setting.cellHeight;
         const auto shape = cells_for(meta.type, meta.direction);
 
         auto can_place = [&](int px, int py) -> bool {
             for (auto [rr, cc] : shape) {
-                const int col = (px - grid.origin_x) / grid.cellW + cc;
-                const int row = (py - grid.origin_y) / grid.cellH + rr;
-                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
-                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+                const int col = (px - grid->origin_x) / grid->cellW + cc;
+                const int row = (py - grid->origin_y) / grid->cellH + rr;
+                if (col < 0 || col >= grid->cols || row < 0 || row >= grid->rows) return false;
+                if (grid->occ[grid->index(row, col)] == CellStatus::Filled) return false;
             }
             return true;
         };
@@ -504,28 +527,87 @@ static inline void resolveDropSystem(entt::registry& registry, const GridResourc
         }
 
         if (meta.status != PieceStatus::Falling) {
-            registry.get_or_emplace<LockTimer>(e).sec += env.dt;
-        } else if (registry.any_of<LockTimer>(e)) {
-            registry.remove<LockTimer>(e);
+            // ロックタイマ加算
+            LockTimer lt{};
+            if (auto* old = view.try_get<LockTimer>(e)) lt = *old;
+            lt.sec += res.env.dt;
+            out.add(cmd::emplace_or_replace<LockTimer>(e, lt));
+        } else {
+            out.add(cmd::remove<LockTimer>(e));
         }
+
+        out.add(cmd::emplace_or_replace<Position>(e, pos));
+        out.add(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
     }
 }
 
-static inline void lockAndMergeSystem(entt::registry& registry, GridResource& grid,
-                                      const Env<GlobalSetting>& env) {
+// =============================
+// ハードドロップ（純粋）
+// =============================
+static void hardDropSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                CommandBuffer& out) {
+    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    if (!grid) return;
+
+    auto v =
+        view.view<const ActivePiece, const Position, const TetriminoMeta, const HardDropRequest>();
+    for (auto e : v) {
+        auto pos = v.get<const Position>(e);
+        auto meta = v.get<const TetriminoMeta>(e);
+
+        const int step_py = res.env.setting.cellHeight;  // 1セルのピクセル
+        const auto shape = cells_for(meta.type, meta.direction);
+
+        auto can_place = [&](int px, int py) -> bool {
+            for (auto [rr, cc] : shape) {
+                const int col = (px - grid->origin_x) / grid->cellW + cc;
+                const int row = (py - grid->origin_y) / grid->cellH + rr;
+                if (col < 0 || col >= grid->cols || row < 0 || row >= grid->rows) return false;
+                if (grid->occ[grid->index(row, col)] == CellStatus::Filled) return false;
+            }
+            return true;
+        };
+
+        // 可能な限り下へ
+        int ny = pos.y;
+        while (can_place(pos.x, ny + step_py)) ny += step_py;
+
+        pos.y = ny;
+
+        // 設置：即ロック扱い（次フレームで確実に Merge）
+        meta.status = PieceStatus::Landed;
+        LockTimer lt{};
+        lt.sec = kLockDelaySec;
+
+        out.add(cmd::emplace_or_replace<Position>(e, pos));
+        out.add(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
+        out.add(cmd::emplace_or_replace<LockTimer>(e, lt));
+        out.add(cmd::remove<HardDropRequest>(e));  // 消費
+    }
+}
+
+// =============================
+// ロック & マージ（純粋）
+// =============================
+static void lockAndMergeSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                    CommandBuffer& out) {
+    const auto* pgrid = view.try_get<GridResource>(res.grid_e);
+    if (!pgrid) return;
+    auto grid = *pgrid;  // 書換え用コピー（最後に置換コマンドで反映）
+
     std::vector<entt::entity> to_fix;
-    auto view = registry.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
-    for (auto e : view) {
-        auto& meta = view.get<TetriminoMeta>(e);
-        auto& lt = view.get<LockTimer>(e);
+    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const LockTimer>();
+    for (auto e : v) {
+        const auto& meta = v.get<const TetriminoMeta>(e);
+        const auto& lt = v.get<const LockTimer>(e);
         if (meta.status == PieceStatus::Falling) continue;
         if (lt.sec < kLockDelaySec) continue;
         to_fix.push_back(e);
     }
 
     for (auto e : to_fix) {
-        auto& pos = registry.get<Position>(e);
-        auto& meta = registry.get<TetriminoMeta>(e);
+        const auto& pos = view.get<const Position>(e);
+        const auto& meta = view.get<const TetriminoMeta>(e);
 
         std::array<Coord, 4> cells{};
         switch (meta.direction) {
@@ -550,38 +632,47 @@ static inline void lockAndMergeSystem(entt::registry& registry, GridResource& gr
             }
         }
 
-        registry.destroy(e);
+        // アクティブピース破棄
+        out.add(cmd::destroy(e));
 
-        // 新規スポーン
-        constexpr int spawn_col = 3;
-        constexpr int spawn_row = 3;
-        const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
-        const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
+        // 新規スポーン（7-Bag）
+        out.add(cmd::create_then([&](entt::registry& r, entt::entity ne) {
+            auto& g = r.get<GridResource>(res.grid_e);
+            constexpr int spawn_col = 3;
+            constexpr int spawn_row = 3;
+            const int spawn_x = g.origin_x + spawn_col * g.cellW;
+            const int spawn_y = g.origin_y + spawn_row * g.cellH;
 
-        auto new_position = registry.create();
-        registry.emplace<Position>(new_position, spawn_x, spawn_y);
+            // registry のコンテキストに保存してある PieceQueue を使用
+            auto& piece_queue = r.ctx().get<PieceQueue>();
+            if (piece_queue.queue.empty()) refill_bag(piece_queue);
+            const PieceType next_type = take_next(piece_queue);
 
-        // --- ここから変更: 7-Bag から取得 ---
-        // registry のコンテキストに保存してある PieceQueue を使用
-        auto& piece_queue = registry.ctx().get<PieceQueue>();
-        if (piece_queue.queue.empty()) {
-            refill_bag(piece_queue);
-        }
-        const PieceType next_type = take_next(piece_queue);
-        // --- ここまで変更 ---
+            r.emplace<Position>(ne, spawn_x, spawn_y);
+            r.emplace<TetriminoMeta>(ne, next_type, PieceDirection::West, PieceStatus::Falling);
+            r.emplace<ActivePiece>(ne);
 
-        registry.emplace<TetriminoMeta>(new_position, next_type, PieceDirection::West,
-                                        PieceStatus::Falling);
-        registry.emplace<ActivePiece>(new_position);
-
-        const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
-        registry.emplace<Gravity>(new_position, base_rate);
-        registry.emplace<FallAccCells>(new_position, 0.0);
-        registry.emplace<SoftDrop>(new_position, false, 10.0);
+            const double base_rate =
+                (res.env.setting.dropRate > 0.0) ? (1.0 / res.env.setting.dropRate) : 0.0;
+            r.emplace<Gravity>(ne, base_rate);
+            r.emplace<FallAccCells>(ne, 0.0);
+            r.emplace<SoftDrop>(ne, false, 10.0);
+        }));
     }
+
+    // Grid 書換えを発行
+    out.add(cmd::emplace_or_replace<GridResource>(res.grid_e, grid));
 }
 
-static inline void lineClearSystem(GridResource& grid) {
+// =============================
+// ライン消去（純粋）
+// =============================
+static void lineClearSystem_pure(const entt::registry& view, const TetrisResources& res,
+                                 CommandBuffer& out) {
+    const auto* pgrid = view.try_get<GridResource>(res.grid_e);
+    if (!pgrid) return;
+    auto grid = *pgrid;  // コピーを編集し、最後に置換
+
     int write = grid.rows - 1;
     for (int r0 = grid.rows - 1; r0 >= 0; --r0) {
         bool full = true;
@@ -605,13 +696,15 @@ static inline void lineClearSystem(GridResource& grid) {
             grid.occ[grid.index(r0, c0)] = CellStatus::Empty;
         }
     }
+
+    out.add(cmd::emplace_or_replace<GridResource>(res.grid_e, grid));
 }
 
 // =============================
 // 外部公開 API
 // =============================
 
-// ワールド生成（Result 返しに変更）
+// ワールド生成
 export inline tl::expected<World, std::string> make_world(
     const std::shared_ptr<const GlobalSetting>& gs) {
     if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
@@ -638,14 +731,13 @@ export inline tl::expected<World, std::string> make_world(
     const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
     const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
-    // --- ここから変更: 7-Bag 初期化と取得 ---
+    // 7-Bag 初期化と取得
     // registry のコンテキストに PieceQueue を保持（初回のみ emplace）
     auto& pq = registry.ctx().emplace<PieceQueue>();
     if (pq.queue.empty()) {
         refill_bag(pq);
     }
     const PieceType first_type = take_next(pq);
-    // --- ここまで変更 ---
 
     world.active = registry.create();
     registry.emplace<Position>(world.active, spawn_x, spawn_y);
@@ -661,31 +753,30 @@ export inline tl::expected<World, std::string> make_world(
     return world;
 }
 
-// 1フレーム更新
+// 1フレーム更新（純粋システムのスケジューラで実行）
 export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
     if (!w.registry) return;
-    auto& registry = *w.registry;
-    auto* grid = registry.try_get<GridResource>(w.grid_singleton);
-    if (!grid) return;
+    auto& world = *w.registry;
+    if (!world.valid(w.grid_singleton)) return;
 
-    inputSystem(registry, env.input);
-    gravitySystem(registry, env.dt);
+    // Resources 構築
+    TetrisResources res{env.input, env, w.grid_singleton};
 
-    // --- ここから追記: 回転を最初に解決 ---
-    resolveRotationSystem(registry, *grid, env);
-    // --- 追記ここまで ---
+    Schedule<TetrisResources> sch{{
+        Phase<TetrisResources>{{&inputSystem_pure}},
+        Phase<TetrisResources>{{&gravitySystem_pure}},
+        Phase<TetrisResources>{{&resolveRotationSystem_pure}},
+        Phase<TetrisResources>{{&resolveLateralSystem_pure}},
+        Phase<TetrisResources>{{&hardDropSystem_pure}},
+        Phase<TetrisResources>{{&resolveDropSystem_pure}},
+        Phase<TetrisResources>{{&lockAndMergeSystem_pure}},
+        Phase<TetrisResources>{{&lineClearSystem_pure}},
+    }};
 
-    // --- ここから追記: 横 → 縦 の順で解決 ---
-    resolveLateralSystem(registry, *grid, env);
-    hardDropSystem(registry, *grid, env);  // ← 追加: 設置（即時ロック）
-    resolveDropSystem(registry, *grid, env);
-    // --- 追記ここまで ---
-
-    lockAndMergeSystem(registry, *grid, env);
-    lineClearSystem(*grid);
+    run_schedule(world, res, sch);
 }
 
-// 描画
+// 描画（副作用：従来どおり直接描画でOK）
 export inline void render_world(const World& world, SDL_Renderer* renderer) {
     if (!world.registry) return;
     auto& registry = *world.registry;
