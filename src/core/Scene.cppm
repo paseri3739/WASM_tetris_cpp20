@@ -106,7 +106,7 @@ inline Scene update(const InitialData& s, const Env& env) {
     // 入力に応じて遷移
     if (env.input.pressed(input::InputKey::PAUSE)) {
         NextData next{};
-        return Scene{std::move(next)};  // 遷移
+        return Scene{next};  // 遷移
     }
 
     // 例:物理・落下などの更新があればここで s を複製して書き換え
@@ -114,7 +114,7 @@ inline Scene update(const InitialData& s, const Env& env) {
     InitialData updated = s;
     // ... 更新処理 ...
 
-    return Scene{std::move(updated)};  // 継続
+    return Scene{updated};  // 継続
 }
 
 inline void render(const InitialData& s, SDL_Renderer* renderer) {
@@ -135,7 +135,7 @@ inline Scene update(const NextData& s, const Env& env) {
     // 追加: PAUSE が押されたら ThirdData へ遷移
     if (env.input.pressed(input::InputKey::PAUSE)) {
         ThirdData third{};
-        return Scene{std::move(third)};
+        return Scene{third};
     }
     return Scene{s};  // 継続(遷移なし)
 }
@@ -155,7 +155,7 @@ inline Scene update(const ThirdData& s, const Env& env) {
         // setting は他シーンと同様に env から渡す
         InitialData initial =
             make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
-        return Scene{std::move(initial)};
+        return Scene{initial};
     }
 
     return Scene{s};  // 継続(遷移なし)
