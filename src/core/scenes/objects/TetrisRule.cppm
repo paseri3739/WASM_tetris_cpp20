@@ -40,9 +40,15 @@ export tl::expected<tetrimino::Tetrimino, FailReason> move(
     const tetrimino::Tetrimino& tetrimino, const grid::Grid& grid,
     const scene_fw::Env<global_setting::GlobalSetting> env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::DOWN);
-    if (env.input.held(*key)) {
+    if (!key) {
+        return tetrimino;
+    }
+
+    // このフレームで "s" が押された瞬間だけ 1 マス落下させる
+    if (env.input.pressed(*key)) {
         return drop(tetrimino, grid, env);
     }
+
     return tetrimino;
 }
 

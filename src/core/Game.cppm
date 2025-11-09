@@ -79,6 +79,23 @@ class Game final {
         this->processInput();
         this->update(delta_time_seconds);
         this->render();
+
+        // --- FPS の集計と出力 ---
+        fps_elapsed_seconds_ += delta_time_seconds;
+        ++fps_frame_count_;
+
+        // 1秒ごとに平均値を出す（多すぎるログを避ける）
+        if (fps_elapsed_seconds_ >= 1.0) {
+            const double fps = static_cast<double>(fps_frame_count_) / fps_elapsed_seconds_;
+            const double ms_per_frame = 1000.0 / (fps > 0.0 ? fps : 1.0);
+
+            // SDL のログ機構（emscripten でもブラウザコンソールに出ます）
+            SDL_Log("FPS: %.2f  (%.2f ms/frame)", fps, ms_per_frame);
+
+            // 次の区間のためにリセット
+            fps_elapsed_seconds_ = 0.0;
+            fps_frame_count_ = 0;
+        }
     }
 
    private:
@@ -92,6 +109,8 @@ class Game final {
     std::shared_ptr<const Setting> setting_;  // ここが型パラメータ化
     bool running_ = true;
     bool initialized_ = false;
+    double fps_elapsed_seconds_ = 0.0;
+    uint32_t fps_frame_count_ = 0;
 
     void update(double delta_time) {
         scene_fw::Env<Setting> env{*input_, *setting_, delta_time};

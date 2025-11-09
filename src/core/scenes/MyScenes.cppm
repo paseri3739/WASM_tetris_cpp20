@@ -55,6 +55,7 @@ struct InitialData {
 
     // ★ 一定時間ごとに1マス落下させるための蓄積タイマー
     double fall_accumulator = 0.0;
+    double input_accumulator = 0.0;  // 連続入力のための累積時間
 
     InitialData() = default;
 
@@ -149,69 +150,119 @@ inline tl::expected<Scene, std::string> make_initial(
 // =============================
 // --- Initial シーン: update / render (ECS + TetrisRule::drop)
 // =============================
+// 毎フレームの処理
 
 inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 入力に応じて遷移
-    const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
-    if (env.input.pressed(*key)) {
+    const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
+    if (pause_key && env.input.pressed(*pause_key)) {
         NextData next{};
         return Scene{next};  // 遷移
     }
 
-    // シーン状態をコピー（Grid はディープコピー, registry は共有）
     InitialData updated = s;
 
     if (updated.registry && updated.grid) {
         auto& registry = *updated.registry;
         auto& grid = *updated.grid;
 
-        // 経過時間を加算
-        updated.fall_accumulator += env.dt;
+        // 時間を加算
+        // 旧: updated.fall_accumulator は「秒」ベースのアキュムレータ
+        // 新: 「セル数」ベースのアキュムレータとして運用（cells accumulator）
+        //     → env.dt * rate(cells/sec) を足していき、floor 分だけ 1 セル落下
+        // 旧: updated.input_accumulator は使用しない（自然落下の倍率化に一本化）
+        //     ※ 互換のため値は維持するが、ここではリセットのみ行う
+        updated.input_accumulator = 0.0;  // 押しっぱなしの離散リピートは廃止
 
-        // 一定間隔ごとに1マス落下させる
-        const double fall_interval = env.setting.dropRate;  // 秒: 適宜調整
-        while (updated.fall_accumulator >= fall_interval) {
-            updated.fall_accumulator -= fall_interval;
+        // 落下レート計算（cells/sec）
+        // 基本レート: 1 / dropRate（dropRate は「自然落下の間隔[秒/セル]」）
+        const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
 
-            auto view = registry.view<Position, TetriminoMeta, TetriminoTag>();
-            for (auto entity : view) {
-                auto& pos = view.get<Position>(entity);
-                auto& meta = view.get<TetriminoMeta>(entity);
+        // ソフトドロップ倍率（押下中に加速）
+        // 必要に応じて設定へ昇格可能。とりあえず固定値。
+        constexpr double kSoftMultiplier = 10.0;
 
-                if (meta.status != tetrimino::TetriminoStatus::Falling) {
-                    continue;
-                }
+        // 入力状態
+        const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
+        const bool isHeldDown = (down_key && env.input.held(*down_key));
 
-                // 現在の ECS 状態から Tetrimino を組み立ててルールに渡す
-                tetrimino::Tetrimino current{meta.type, meta.status, meta.direction,
-                                             Position2D{pos.x, pos.y}};
+        // 現フレームの実効レート
+        const double rate = base_rate * (isHeldDown ? kSoftMultiplier : 1.0);
 
-                auto moved = tetris_rule::move(current, grid, env);
-                auto res = tetris_rule::drop(moved ? moved.value() : current, grid, env);
+        // セル数アキュムレータへ加算（cells）
+        updated.fall_accumulator += env.dt * rate;
 
-                if (res) {
-                    const auto& next = res.value();
-                    // 成功時: 位置・状態を反映
-                    pos.x = next.position.x;
-                    pos.y = next.position.y;
-                    meta.status = next.status;
-                    meta.direction = next.direction;
+        // 取りこぼし防止のため整数セル分だけまとめて処理（過剰進行防止に上限を設ける）
+        constexpr int kMaxDropsPerFrame = 6;
+        int steps_to_drop = static_cast<int>(std::floor(updated.fall_accumulator));
+        if (steps_to_drop > kMaxDropsPerFrame) {
+            steps_to_drop = kMaxDropsPerFrame;
+        }
+        updated.fall_accumulator -= static_cast<double>(steps_to_drop);
+
+        // エンティティの更新
+        auto view = registry.view<Position, TetriminoMeta, TetriminoTag>();
+        for (auto entity : view) {
+            auto& pos = view.get<Position>(entity);
+            auto& meta = view.get<TetriminoMeta>(entity);
+
+            if (meta.status != tetrimino::TetriminoStatus::Falling) {
+                continue;
+            }
+
+            int cur_x = pos.x;
+            int cur_y = pos.y;
+            auto cur_status = meta.status;
+            auto cur_dir = meta.direction;
+
+            // フレーム先頭では足さない：updated.input_accumulator += env.dt; を削除する
+            // ↓ 代わりに per-entity で扱う
+            // （本方式では input_accumulator 自体を使用しない）
+
+            // 1) 押下瞬間: 即 1 マス落下（現状維持）→
+            // 本方式では「連続レート加速」に一本化するため廃止
+            //    ※ 押下エッジで 1 マス動かしたい場合は、ここに 1 ステップだけ drop を入れるが、
+            //       同フレーム二重進行を避けるため、その場合 steps_to_drop から 1 を差し引くこと。
+
+            // 2) 押しっぱなしの間だけアキュムレータを進め、しきい値を超えるたびに落下
+            //    → 本方式では steps_to_drop を用いて「連続レート」の結果をそのまま反映
+            for (int i = 0; i < steps_to_drop && cur_status == tetrimino::TetriminoStatus::Falling;
+                 ++i) {
+                tetrimino::Tetrimino cur_tetr{meta.type, cur_status, cur_dir,
+                                              Position2D{cur_x, cur_y}};
+
+                if (auto res = tetris_rule::drop(cur_tetr, grid, env)) {
+                    const auto& t = res.value();
+                    cur_x = t.position.x;
+                    cur_y = t.position.y;
+                    cur_status = t.status;
+                    cur_dir = t.direction;
                 } else {
-                    // 失敗時: 衝突 or 範囲外とみなし着地扱い
                     switch (res.error()) {
                         case tetris_rule::FailReason::OutOfBounds:
                         case tetris_rule::FailReason::Collision:
-                            meta.status = tetrimino::TetriminoStatus::Landed;
+                            cur_status = tetrimino::TetriminoStatus::Landed;
                             break;
                         case tetris_rule::FailReason::NOT_IMPLEMENTED:
                             break;
                     }
+                    break;  // 失敗したら抜ける
                 }
             }
+
+            // 3) 自然落下（現状維持だが、こちらは while のままでOK）
+            //    → 旧方式の「秒アキュムレータ >= fall_interval」での while は廃止。
+            //       本方式では上の steps_to_drop でまとめて処理済み。
+
+            // 最終状態を反映
+            pos.x = cur_x;
+            pos.y = cur_y;
+            meta.status = cur_status;
+            meta.direction = cur_dir;
         }
     }
 
-    return Scene{std::move(updated)};  // 継続
+    return Scene{std::move(updated)};
 }
 
 inline void render(const InitialData& s, SDL_Renderer* renderer) {
