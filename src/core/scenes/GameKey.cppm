@@ -23,6 +23,7 @@ enum class GameKey {
 inline const std::vector<std::pair<SDL_Keycode, GameKey>> KEY_MAP = {
     {SDLK_a, GameKey::LEFT},       {SDLK_d, GameKey::RIGHT},       {SDLK_w, GameKey::UP},
     {SDLK_s, GameKey::DOWN},       {SDLK_z, GameKey::ROTATE_LEFT}, {SDLK_x, GameKey::ROTATE_RIGHT},
+    {SDLK_SPACE, GameKey::DROP},  // ← 追加: ハードドロップ
     {SDLK_RETURN, GameKey::PAUSE}, {SDLK_ESCAPE, GameKey::QUIT}};
 
 // 正方向: SDL_Keycode → GameKey

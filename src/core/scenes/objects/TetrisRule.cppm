@@ -1,9 +1,12 @@
 module;
 #include <SDL2/SDL.h>
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <deque>
 #include <entt/entt.hpp>
 #include <memory>
+#include <random>
 #include <string>
 #include <tl/expected.hpp>
 #include <utility>
@@ -95,6 +98,27 @@ struct LockTimer {
 };
 
 constexpr double kLockDelaySec = 0.3;
+
+struct PieceQueue {
+    std::deque<PieceType> queue;
+    std::mt19937 rng{std::random_device{}()};
+};
+
+static inline void refill_bag(PieceQueue& pq) {
+    std::array<PieceType, 7> bag{PieceType::I, PieceType::O, PieceType::T, PieceType::S,
+                                 PieceType::Z, PieceType::J, PieceType::L};
+    std::shuffle(bag.begin(), bag.end(), pq.rng);
+    for (auto t : bag) pq.queue.push_back(t);
+}
+
+static inline PieceType take_next(PieceQueue& pq) {
+    if (pq.queue.empty()) refill_bag(pq);
+    auto t = pq.queue.front();
+    pq.queue.pop_front();
+    return t;
+}
+
+struct HardDropRequest {};  // 押下フレームのみ付与
 
 // 盤面占有
 enum class CellStatus : std::uint8_t { Empty, Filled };
@@ -272,6 +296,49 @@ static inline void inputSystem(entt::registry& r, const input::Input& in) {
             if (ri.dir < -1) ri.dir = -1;
         }
         // --- 追記ここまで ---
+
+        // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
+        if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
+            drop && in.pressed(*drop)) {
+            r.emplace_or_replace<HardDropRequest>(e);
+        }
+        // --- 追記ここまで ---
+    }
+}
+
+static inline void hardDropSystem(entt::registry& r, const GridResource& grid,
+                                  const Env<global_setting::GlobalSetting>& env) {
+    auto view = r.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
+    for (auto e : view) {
+        auto& pos = view.get<Position>(e);
+        auto& meta = view.get<TetriminoMeta>(e);
+
+        const int step_py = env.setting.cellHeight;  // 1セルのピクセル
+        const auto shape = cells_for(meta.type, meta.direction);
+
+        auto can_place = [&](int px, int py) -> bool {
+            for (auto [rr, cc] : shape) {
+                const int col = (px - grid.origin_x) / grid.cellW + cc;
+                const int row = (py - grid.origin_y) / grid.cellH + rr;
+                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
+                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+            }
+            return true;
+        };
+
+        // 可能な限り下へ
+        int ny = pos.y;
+        while (can_place(pos.x, ny + step_py)) {
+            ny += step_py;
+        }
+        pos.y = ny;
+
+        // 設置：即ロック扱い（次フレームで確実に Merge）
+        meta.status = PieceStatus::Landed;
+        auto& lt = r.get_or_emplace<LockTimer>(e);
+        lt.sec = kLockDelaySec;
+
+        r.remove<HardDropRequest>(e);  // 消費
     }
 }
 
@@ -497,7 +564,17 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
 
         auto np = r.create();
         r.emplace<Position>(np, spawn_x, spawn_y);
-        r.emplace<TetriminoMeta>(np, PieceType::Z, PieceDirection::West, PieceStatus::Falling);
+
+        // --- ここから変更: 7-Bag から取得 ---
+        // registry のコンテキストに保存してある PieceQueue を使用
+        auto& pq = r.ctx().get<PieceQueue>();
+        if (pq.queue.empty()) {
+            refill_bag(pq);
+        }
+        const PieceType next_type = take_next(pq);
+        // --- ここまで変更 ---
+
+        r.emplace<TetriminoMeta>(np, next_type, PieceDirection::West, PieceStatus::Falling);
         r.emplace<ActivePiece>(np);
 
         const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
@@ -564,9 +641,18 @@ export inline Result<World> make_world(
     const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
     const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
+    // --- ここから変更: 7-Bag 初期化と取得 ---
+    // registry のコンテキストに PieceQueue を保持（初回のみ emplace）
+    auto& pq = r.ctx().emplace<PieceQueue>();
+    if (pq.queue.empty()) {
+        refill_bag(pq);
+    }
+    const PieceType first_type = take_next(pq);
+    // --- ここまで変更 ---
+
     w.active = r.create();
     r.emplace<Position>(w.active, spawn_x, spawn_y);
-    r.emplace<TetriminoMeta>(w.active, PieceType::Z, PieceDirection::West, PieceStatus::Falling);
+    r.emplace<TetriminoMeta>(w.active, first_type, PieceDirection::West, PieceStatus::Falling);
     r.emplace<ActivePiece>(w.active);
 
     const double base_rate = (cfg.dropRate > 0.0) ? (1.0 / cfg.dropRate) : 0.0;
@@ -593,6 +679,7 @@ export inline void step_world(const World& w, const Env<global_setting::GlobalSe
 
     // --- ここから追記: 横 → 縦 の順で解決 ---
     resolveLateralSystem(r, *grid, env);
+    hardDropSystem(r, *grid, env);  // ← 追加: 設置（即時ロック）
     resolveDropSystem(r, *grid, env);
     // --- 追記ここまで ---
 
