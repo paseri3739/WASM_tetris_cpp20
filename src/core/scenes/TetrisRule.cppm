@@ -30,14 +30,12 @@ namespace tetris_rule {
 // エイリアス
 // =============================
 using scene_fw::Env;
-template <class T>
-using Result = tl::expected<T, std::string>;
 
 // =============================
 // ECS コンポーネント／リソース
 // =============================
 
-// 依存除去: テトリミノ関連を ECS 側に再定義
+// テトリミノ関連enum
 enum class PieceType { I, O, T, S, Z, J, L };
 enum class PieceStatus { Falling, Landed, Merged };
 enum class PieceDirection { North, East, South, West };
@@ -254,26 +252,26 @@ export struct World {
 // Systems
 // =============================
 
-static inline void inputSystem(entt::registry& r, const input::Input& in) {
+static inline void inputSystem(entt::registry& registry, const input::Input& input) {
     const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
-    auto view = r.view<ActivePiece, SoftDrop>();
+    auto view = registry.view<ActivePiece, SoftDrop>();
     for (auto e : view) {
         auto& sd = view.get<SoftDrop>(e);
-        sd.held = (down_key && in.held(*down_key));
+        sd.held = (down_key && input.held(*down_key));
         // 左右／回転は MoveIntent を別途積む（省略）
 
         // --- 修正: 左右は「押下瞬間のみ」1セル分の MoveIntent を積む ---
         int dx = 0;
         if (const auto left = game_key::to_sdl_key(game_key::GameKey::LEFT);
-            left && in.pressed(*left))
+            left && input.pressed(*left))
             dx -= 1;
         if (const auto right = game_key::to_sdl_key(game_key::GameKey::RIGHT);
-            right && in.pressed(*right))
+            right && input.pressed(*right))
             dx += 1;
 
         // 同フレームに左右同時押下された場合は相殺（dx=0）
         if (dx != 0) {
-            auto& mi = r.get_or_emplace<MoveIntent>(e);
+            auto& mi = registry.get_or_emplace<MoveIntent>(e);
             mi.dx += dx;
         }
         // --- ここまで ---
@@ -281,34 +279,34 @@ static inline void inputSystem(entt::registry& r, const input::Input& in) {
         // --- 追記: 回転は押下瞬間のみ受理 ---
         int rot = 0;
         if (const auto rl = game_key::to_sdl_key(game_key::GameKey::ROTATE_LEFT);
-            rl && in.pressed(*rl))
+            rl && input.pressed(*rl))
             rot -= 1;
         if (const auto rr = game_key::to_sdl_key(game_key::GameKey::ROTATE_RIGHT);
-            rr && in.pressed(*rr))
+            rr && input.pressed(*rr))
             rot += 1;
 
         // 同フレームに左右回転同時押下なら相殺（rot=0）
         if (rot != 0) {
-            auto& ri = r.get_or_emplace<RotateIntent>(e);
-            ri.dir += (rot > 0 ? +1 : -1);  // -1/ +1 だけ使う
+            auto& rotate_intent = registry.get_or_emplace<RotateIntent>(e);
+            rotate_intent.dir += (rot > 0 ? +1 : -1);  // -1/ +1 だけ使う
             // 念のため -1,0,+1 の範囲に収める
-            if (ri.dir > 1) ri.dir = 1;
-            if (ri.dir < -1) ri.dir = -1;
+            if (rotate_intent.dir > 1) rotate_intent.dir = 1;
+            if (rotate_intent.dir < -1) rotate_intent.dir = -1;
         }
         // --- 追記ここまで ---
 
         // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
         if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
-            drop && in.pressed(*drop)) {
-            r.emplace_or_replace<HardDropRequest>(e);
+            drop && input.pressed(*drop)) {
+            registry.emplace_or_replace<HardDropRequest>(e);
         }
         // --- 追記ここまで ---
     }
 }
 
-static inline void hardDropSystem(entt::registry& r, const GridResource& grid,
+static inline void hardDropSystem(entt::registry& registry, const GridResource& grid,
                                   const Env<global_setting::GlobalSetting>& env) {
-    auto view = r.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
+    auto view = registry.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
         auto& meta = view.get<TetriminoMeta>(e);
@@ -335,21 +333,21 @@ static inline void hardDropSystem(entt::registry& r, const GridResource& grid,
 
         // 設置：即ロック扱い（次フレームで確実に Merge）
         meta.status = PieceStatus::Landed;
-        auto& lt = r.get_or_emplace<LockTimer>(e);
-        lt.sec = kLockDelaySec;
+        auto& lock_timer = registry.get_or_emplace<LockTimer>(e);
+        lock_timer.sec = kLockDelaySec;
 
-        r.remove<HardDropRequest>(e);  // 消費
+        registry.remove<HardDropRequest>(e);  // 消費
     }
 }
 
 // --- 追記: 方向遷移のヘルパ ---
-static inline PieceDirection rotate_next(PieceDirection cur, int dir /*-1 or +1*/) {
-    if (dir == 0) return cur;
+static inline PieceDirection rotate_next(PieceDirection currentDirection, int dir /*-1 or +1*/) {
+    if (dir == 0) return currentDirection;
     // East=+1, West=-1 相当で循環
     constexpr PieceDirection order[4] = {PieceDirection::North, PieceDirection::East,
                                          PieceDirection::South, PieceDirection::West};
     int idx = 0;
-    switch (cur) {
+    switch (currentDirection) {
         case PieceDirection::North:
             idx = 0;
             break;
@@ -368,14 +366,14 @@ static inline PieceDirection rotate_next(PieceDirection cur, int dir /*-1 or +1*
 }
 
 // --- 追記: 回転解決（クラシック／壁蹴りなし） ---
-static inline void resolveRotationSystem(entt::registry& r, const GridResource& grid,
+static inline void resolveRotationSystem(entt::registry& registry, const GridResource& grid,
                                          const scene_fw::Env<global_setting::GlobalSetting>& env) {
-    auto view = r.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
+    auto view = registry.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
         auto& meta = view.get<TetriminoMeta>(e);
         const auto ri = view.get<RotateIntent>(e);
-        r.remove<RotateIntent>(e);
+        registry.remove<RotateIntent>(e);
         if (ri.dir == 0) continue;
 
         // Oミノは回転しても形状不変（そのまま成功扱いでも挙動同じ）
@@ -403,21 +401,21 @@ static inline void resolveRotationSystem(entt::registry& r, const GridResource& 
             if (meta.status != PieceStatus::Falling) {
                 meta.status = PieceStatus::Falling;
             }
-            if (r.any_of<LockTimer>(e)) {
-                r.remove<LockTimer>(e);
+            if (registry.any_of<LockTimer>(e)) {
+                registry.remove<LockTimer>(e);
             }
         }
         // 置けない場合は不採用（何もしない）
     }
 }
 
-static inline void resolveLateralSystem(entt::registry& r, const GridResource& grid,
+static inline void resolveLateralSystem(entt::registry& registry, const GridResource& grid,
                                         const Env<global_setting::GlobalSetting>& env) {
-    auto view = r.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
+    auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
         auto& meta = view.get<TetriminoMeta>(e);
-        auto* mi = r.try_get<MoveIntent>(e);
+        auto* mi = registry.try_get<MoveIntent>(e);
         if (!mi) continue;
 
         int steps = mi->dx;
@@ -451,8 +449,8 @@ static inline void resolveLateralSystem(entt::registry& r, const GridResource& g
     }
 }
 
-static inline void gravitySystem(entt::registry& r, double dt) {
-    auto view = r.view<ActivePiece, Gravity, FallAccCells, SoftDrop>();
+static inline void gravitySystem(entt::registry& registry, double delta_time) {
+    auto view = registry.view<ActivePiece, Gravity, FallAccCells, SoftDrop>();
     for (auto e : view) {
         constexpr int kMaxDropsPerFrame = 6;
         auto& g = view.get<Gravity>(e);
@@ -460,29 +458,29 @@ static inline void gravitySystem(entt::registry& r, double dt) {
         auto& sd = view.get<SoftDrop>(e);
 
         const double rate = g.rate_cps * (sd.held ? sd.multiplier : 1.0);
-        acc.cells += dt * rate;
+        acc.cells += delta_time * rate;
 
         int steps = static_cast<int>(std::floor(acc.cells));
         steps = std::max(0, std::min(steps, kMaxDropsPerFrame));
         if (steps > 0) {
-            auto& mi = r.get_or_emplace<MoveIntent>(e);
+            auto& mi = registry.get_or_emplace<MoveIntent>(e);
             mi.dy += steps;
             acc.cells -= steps;
         }
     }
 }
 
-static inline void resolveDropSystem(entt::registry& r, const GridResource& grid,
+static inline void resolveDropSystem(entt::registry& registry, const GridResource& grid,
                                      const Env<global_setting::GlobalSetting>& env) {
-    auto view = r.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
+    auto view = registry.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : view) {
         auto& pos = view.get<Position>(e);
         auto& meta = view.get<TetriminoMeta>(e);
-        auto* mi = r.try_get<MoveIntent>(e);
+        auto* mi = registry.try_get<MoveIntent>(e);
         if (!mi) continue;
 
         int steps = mi->dy;
-        r.remove<MoveIntent>(e);
+        registry.remove<MoveIntent>(e);
         if (steps <= 0) continue;
 
         const int step_px = env.setting.cellHeight;
@@ -508,17 +506,17 @@ static inline void resolveDropSystem(entt::registry& r, const GridResource& grid
         }
 
         if (meta.status != PieceStatus::Falling) {
-            r.get_or_emplace<LockTimer>(e).sec += env.dt;
-        } else if (r.any_of<LockTimer>(e)) {
-            r.remove<LockTimer>(e);
+            registry.get_or_emplace<LockTimer>(e).sec += env.dt;
+        } else if (registry.any_of<LockTimer>(e)) {
+            registry.remove<LockTimer>(e);
         }
     }
 }
 
-static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
+static inline void lockAndMergeSystem(entt::registry& registry, GridResource& grid,
                                       const Env<global_setting::GlobalSetting>& env) {
     std::vector<entt::entity> to_fix;
-    auto view = r.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
+    auto view = registry.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
     for (auto e : view) {
         auto& meta = view.get<TetriminoMeta>(e);
         auto& lt = view.get<LockTimer>(e);
@@ -528,8 +526,8 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
     }
 
     for (auto e : to_fix) {
-        auto& pos = r.get<Position>(e);
-        auto& meta = r.get<TetriminoMeta>(e);
+        auto& pos = registry.get<Position>(e);
+        auto& meta = registry.get<TetriminoMeta>(e);
 
         std::array<Coord, 4> cells{};
         switch (meta.direction) {
@@ -554,7 +552,7 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
             }
         }
 
-        r.destroy(e);
+        registry.destroy(e);
 
         // 新規スポーン
         constexpr int spawn_col = 3;
@@ -562,25 +560,26 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
         const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
         const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
-        auto np = r.create();
-        r.emplace<Position>(np, spawn_x, spawn_y);
+        auto new_position = registry.create();
+        registry.emplace<Position>(new_position, spawn_x, spawn_y);
 
         // --- ここから変更: 7-Bag から取得 ---
         // registry のコンテキストに保存してある PieceQueue を使用
-        auto& pq = r.ctx().get<PieceQueue>();
-        if (pq.queue.empty()) {
-            refill_bag(pq);
+        auto& piece_queue = registry.ctx().get<PieceQueue>();
+        if (piece_queue.queue.empty()) {
+            refill_bag(piece_queue);
         }
-        const PieceType next_type = take_next(pq);
+        const PieceType next_type = take_next(piece_queue);
         // --- ここまで変更 ---
 
-        r.emplace<TetriminoMeta>(np, next_type, PieceDirection::West, PieceStatus::Falling);
-        r.emplace<ActivePiece>(np);
+        registry.emplace<TetriminoMeta>(new_position, next_type, PieceDirection::West,
+                                        PieceStatus::Falling);
+        registry.emplace<ActivePiece>(new_position);
 
         const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
-        r.emplace<Gravity>(np, base_rate);
-        r.emplace<FallAccCells>(np, 0.0);
-        r.emplace<SoftDrop>(np, false, 10.0);
+        registry.emplace<Gravity>(new_position, base_rate);
+        registry.emplace<FallAccCells>(new_position, 0.0);
+        registry.emplace<SoftDrop>(new_position, false, 10.0);
     }
 }
 
@@ -615,18 +614,18 @@ static inline void lineClearSystem(GridResource& grid) {
 // =============================
 
 // ワールド生成（Result 返しに変更）
-export inline Result<World> make_world(
+export inline tl::expected<World, std::string> make_world(
     const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
     if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
 
-    World w{};
-    w.registry = std::make_shared<entt::registry>();
-    auto& r = *w.registry;
+    World world{};
+    world.registry = std::make_shared<entt::registry>();
+    auto& registry = *world.registry;
     const auto& cfg = *gs;
 
     // GridResource（singleton 的エンティティ）
-    w.grid_singleton = r.create();
-    auto& grid = r.emplace<GridResource>(w.grid_singleton);
+    world.grid_singleton = registry.create();
+    auto& grid = registry.emplace<GridResource>(world.grid_singleton);
     grid.rows = cfg.gridRows;
     grid.cols = cfg.gridColumns;
     grid.cellW = cfg.cellWidth;
@@ -643,61 +642,62 @@ export inline Result<World> make_world(
 
     // --- ここから変更: 7-Bag 初期化と取得 ---
     // registry のコンテキストに PieceQueue を保持（初回のみ emplace）
-    auto& pq = r.ctx().emplace<PieceQueue>();
+    auto& pq = registry.ctx().emplace<PieceQueue>();
     if (pq.queue.empty()) {
         refill_bag(pq);
     }
     const PieceType first_type = take_next(pq);
     // --- ここまで変更 ---
 
-    w.active = r.create();
-    r.emplace<Position>(w.active, spawn_x, spawn_y);
-    r.emplace<TetriminoMeta>(w.active, first_type, PieceDirection::West, PieceStatus::Falling);
-    r.emplace<ActivePiece>(w.active);
+    world.active = registry.create();
+    registry.emplace<Position>(world.active, spawn_x, spawn_y);
+    registry.emplace<TetriminoMeta>(world.active, first_type, PieceDirection::West,
+                                    PieceStatus::Falling);
+    registry.emplace<ActivePiece>(world.active);
 
     const double base_rate = (cfg.dropRate > 0.0) ? (1.0 / cfg.dropRate) : 0.0;
-    r.emplace<Gravity>(w.active, base_rate);
-    r.emplace<FallAccCells>(w.active, 0.0);
-    r.emplace<SoftDrop>(w.active, false, 10.0);
+    registry.emplace<Gravity>(world.active, base_rate);
+    registry.emplace<FallAccCells>(world.active, 0.0);
+    registry.emplace<SoftDrop>(world.active, false, 10.0);
 
-    return w;
+    return world;
 }
 
 // 1フレーム更新
 export inline void step_world(const World& w, const Env<global_setting::GlobalSetting>& env) {
     if (!w.registry) return;
-    auto& r = *w.registry;
-    auto* grid = r.try_get<GridResource>(w.grid_singleton);
+    auto& registry = *w.registry;
+    auto* grid = registry.try_get<GridResource>(w.grid_singleton);
     if (!grid) return;
 
-    inputSystem(r, env.input);
-    gravitySystem(r, env.dt);
+    inputSystem(registry, env.input);
+    gravitySystem(registry, env.dt);
 
     // --- ここから追記: 回転を最初に解決 ---
-    resolveRotationSystem(r, *grid, env);
+    resolveRotationSystem(registry, *grid, env);
     // --- 追記ここまで ---
 
     // --- ここから追記: 横 → 縦 の順で解決 ---
-    resolveLateralSystem(r, *grid, env);
-    hardDropSystem(r, *grid, env);  // ← 追加: 設置（即時ロック）
-    resolveDropSystem(r, *grid, env);
+    resolveLateralSystem(registry, *grid, env);
+    hardDropSystem(registry, *grid, env);  // ← 追加: 設置（即時ロック）
+    resolveDropSystem(registry, *grid, env);
     // --- 追記ここまで ---
 
-    lockAndMergeSystem(r, *grid, env);
+    lockAndMergeSystem(registry, *grid, env);
     lineClearSystem(*grid);
 }
 
 // 描画
-export inline void render_world(const World& w, SDL_Renderer* renderer) {
-    if (!w.registry) return;
-    auto& r = *w.registry;
+export inline void render_world(const World& world, SDL_Renderer* renderer) {
+    if (!world.registry) return;
+    auto& registry = *world.registry;
 
     // 背景
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
     // Grid
-    if (auto* grid = r.try_get<GridResource>(w.grid_singleton)) {
+    if (auto* grid = registry.try_get<GridResource>(world.grid_singleton)) {
         for (int row = 0; row < grid->rows; ++row) {
             for (int col = 0; col < grid->cols; ++col) {
                 SDL_Rect rect = grid->rect_rc(row, col);
@@ -723,14 +723,14 @@ export inline void render_world(const World& w, SDL_Renderer* renderer) {
     }
 
     // ActivePiece 描画（TetriMino の描画を流用 -> ECS ローカルで置換）
-    auto view = r.view<const ActivePiece, const Position, const TetriminoMeta>();
+    auto view = registry.view<const ActivePiece, const Position, const TetriminoMeta>();
     for (auto e : view) {
         const auto& pos = view.get<const Position>(e);
         const auto& meta = view.get<const TetriminoMeta>(e);
 
-        const auto* grid = r.try_get<GridResource>(w.grid_singleton);
-        const int cw = grid ? grid->cellW : 30;
-        const int ch = grid ? grid->cellH : 30;
+        const auto* grid = registry.try_get<GridResource>(world.grid_singleton);
+        const int cell_width = grid ? grid->cellW : 30;
+        const int cell_height = grid ? grid->cellH : 30;
 
         // 色設定
         const SDL_Color color = to_color(meta.type);
@@ -739,24 +739,24 @@ export inline void render_world(const World& w, SDL_Renderer* renderer) {
         // 形状セル
         const auto cells = cells_for(meta.type, meta.direction);
         for (const auto& c : cells) {
-            const int x = pos.x + static_cast<int>(c.second) * cw;
-            const int y = pos.y + static_cast<int>(c.first) * ch;
-            SDL_Rect rect = {x, y, cw, ch};
+            const int x = pos.x + static_cast<int>(c.second) * cell_width;
+            const int y = pos.y + static_cast<int>(c.first) * cell_height;
+            SDL_Rect rect = {x, y, cell_width, cell_height};
             SDL_RenderFillRect(renderer, &rect);
         }
 
         // 4x4 グリッド（元 render_grid_around 相当）
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        const int grid_w = cw * 4;
-        const int grid_h = ch * 4;
+        const int grid_w = cell_width * 4;
+        const int grid_h = cell_height * 4;
         SDL_Rect frame = {pos.x, pos.y, grid_w, grid_h};
         SDL_RenderDrawRect(renderer, &frame);
         for (int c = 1; c <= 3; ++c) {
-            const int x = pos.x + c * cw;
+            const int x = pos.x + c * cell_width;
             SDL_RenderDrawLine(renderer, x, pos.y, x, pos.y + grid_h);
         }
         for (int r0 = 1; r0 <= 3; ++r0) {
-            const int y = pos.y + r0 * ch;
+            const int y = pos.y + r0 * cell_height;
             SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
         }
     }
