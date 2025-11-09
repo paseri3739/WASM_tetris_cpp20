@@ -6,11 +6,12 @@ import Position2D;
 import GlobalSetting;
 import Grid;
 import SceneFramework;
+import GameKey;
 namespace tetris_rule {
 export constexpr int rows = 20;
 export constexpr int columns = 10;
 
-export enum class FailReason { OutOfBounds, Collision };
+export enum class FailReason { OutOfBounds, Collision, NOT_IMPLEMENTED };
 
 export tl::expected<tetrimino::Tetrimino, FailReason> drop(
     const tetrimino::Tetrimino& tetrimino, const grid::Grid& grid,
@@ -33,6 +34,16 @@ export tl::expected<tetrimino::Tetrimino, FailReason> drop(
     const tetrimino::Tetrimino new_tetrimino =
         tetrimino::Tetrimino(tetrimino.type, tetrimino.status, tetrimino.direction, new_position);
     return new_tetrimino;
+}
+
+export tl::expected<tetrimino::Tetrimino, FailReason> move(
+    const tetrimino::Tetrimino& tetrimino, const grid::Grid& grid,
+    const scene_fw::Env<global_setting::GlobalSetting> env) {
+    const auto key = game_key::to_sdl_key(game_key::GameKey::DOWN);
+    if (env.input.held(*key)) {
+        return drop(tetrimino, grid, env);
+    }
+    return tetrimino;
 }
 
 }  // namespace tetris_rule

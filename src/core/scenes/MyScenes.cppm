@@ -186,7 +186,8 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
                 tetrimino::Tetrimino current{meta.type, meta.status, meta.direction,
                                              Position2D{pos.x, pos.y}};
 
-                auto res = tetris_rule::drop(current, grid, env);
+                auto moved = tetris_rule::move(current, grid, env);
+                auto res = tetris_rule::drop(moved ? moved.value() : current, grid, env);
 
                 if (res) {
                     const auto& next = res.value();
@@ -201,6 +202,8 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
                         case tetris_rule::FailReason::OutOfBounds:
                         case tetris_rule::FailReason::Collision:
                             meta.status = tetrimino::TetriminoStatus::Landed;
+                            break;
+                        case tetris_rule::FailReason::NOT_IMPLEMENTED:
                             break;
                     }
                 }

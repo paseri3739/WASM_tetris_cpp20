@@ -21,15 +21,9 @@ enum class GameKey {
 
 // SDL_Keycode ⇄ GameKey の対応を1か所に定義
 inline const std::vector<std::pair<SDL_Keycode, GameKey>> KEY_MAP = {
-    {SDLK_LEFT, GameKey::LEFT},      {SDLK_a, GameKey::LEFT},
-    {SDLK_RIGHT, GameKey::RIGHT},    {SDLK_d, GameKey::RIGHT},
-    {SDLK_UP, GameKey::UP},          {SDLK_w, GameKey::UP},
-    {SDLK_DOWN, GameKey::DOWN},      {SDLK_s, GameKey::DOWN},
-    {SDLK_z, GameKey::ROTATE_LEFT},  {SDLK_LCTRL, GameKey::ROTATE_LEFT},
-    {SDLK_x, GameKey::ROTATE_RIGHT}, {SDLK_SPACE, GameKey::ROTATE_RIGHT},
-    {SDLK_RETURN, GameKey::PAUSE},   {SDLK_ESCAPE, GameKey::QUIT},
-    {SDLK_q, GameKey::QUIT},
-};
+    {SDLK_a, GameKey::LEFT},       {SDLK_d, GameKey::RIGHT},       {SDLK_w, GameKey::UP},
+    {SDLK_s, GameKey::DOWN},       {SDLK_z, GameKey::ROTATE_LEFT}, {SDLK_x, GameKey::ROTATE_RIGHT},
+    {SDLK_RETURN, GameKey::PAUSE}, {SDLK_ESCAPE, GameKey::QUIT}};
 
 // 正方向: SDL_Keycode → GameKey
 inline std::optional<GameKey> to_game_key(SDL_Keycode code) {
