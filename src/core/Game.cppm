@@ -2,15 +2,17 @@ module;
 #include <SDL2/SDL.h>
 #include <iostream>  // エラーログ用
 #include <memory>
+import SceneFramework; // 新規
 export module Game;
 import Input;
-import Scene;
 import GlobalSetting;
 
 // =============================
 // フレーム処理（Game 本体）
 // =============================
-export class Game final {
+
+export template <scene_fw::SceneAPI SceneImpl>
+class Game final {
    public:
     explicit Game()
         : window_(nullptr, SDL_DestroyWindow),
@@ -20,7 +22,6 @@ export class Game final {
           initialized_(false),
           setting_(std::make_shared<global_setting::GlobalSetting>(
               10, 20, 30, 30, 60))  // 旧: Grid 依存に合わせて初期化
-
     {
         // SDLの初期化
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -53,8 +54,15 @@ export class Game final {
         }
         renderer_.reset(raw_renderer);
 
-        // ここで variant ベースの初期シーンを構築
-        scene_ = scene::Scene{scene::make_initial(setting_)};
+        // ここで ユーザー実装側の初期シーンを構築 (制御の反転)
+        auto initial_scene = SceneImpl::make_initial(setting_);
+        if (!initial_scene) {
+            std::cerr << "Initial scene could not be created! reason: " << initial_scene.error()
+                      << std::endl;
+            initialized_ = false;
+            return;
+        }
+        scene_ = std::move(initial_scene.value());
 
         initialized_ = true;
     }
@@ -78,8 +86,8 @@ export class Game final {
     std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window_;
     std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer_;
 
-    // variant 化した現在のシーン
-    scene::Scene scene_;
+    // ユーザー定義 Scene 型
+    typename SceneImpl::Scene scene_;
 
     std::shared_ptr<const input::Input> input_;
     std::shared_ptr<const global_setting::GlobalSetting> setting_;
@@ -87,13 +95,12 @@ export class Game final {
     bool initialized_ = false;
 
     void update(double delta_time) {
-        // シーン遷移があれば適用。ロジックはシーンに移譲し、各シーンが次のシーンを決定する。
-        // → variant 方式では step() が常に次の Scene を返すので、そのまま差し替える。
-        scene::Env env{*input_, *setting_, delta_time};
-        scene_ = scene::step(std::move(scene_), env);
+        scene_fw::Env env{*input_, *setting_, delta_time};
+        // ロジックはすべて SceneImpl 側へ委譲
+        scene_ = SceneImpl::step(std::move(scene_), env);
     }
 
-    void render() { scene::draw(scene_, renderer_.get()); }
+    void render() { SceneImpl::draw(scene_, renderer_.get()); }
 
     void processInput() {
         // ポーリングはGameのみが担当し、他のモジュールは入力状態を受け取るだけにする
@@ -151,3 +158,60 @@ export class Game final {
         return input;
     }
 };
+
+// =============================
+// ランナー: main から呼ぶだけにする
+// =============================
+
+// 内部実装用
+struct GameRunner {
+#ifdef __EMSCRIPTEN__
+    template <class GameT>
+    static void main_loop(void* arg) {
+        GameT* game = static_cast<GameT*>(arg);
+        static Uint32 last_time = SDL_GetTicks();
+        Uint32 current_time = SDL_GetTicks();
+        double delta_time = (current_time - last_time) / 1000.0;
+        last_time = current_time;
+        game->tick(delta_time);
+    }
+#endif
+
+    template <scene_fw::SceneAPI SceneImpl>
+    static int run() {
+#ifdef __EMSCRIPTEN__
+        using GameT = Game<SceneImpl>;
+        static GameT game;  // Emscriptenではプログラム終了まで生存させる
+
+        if (!game.isInitialized()) {
+            return 1;
+        }
+
+        emscripten_set_main_loop_arg(&GameRunner::main_loop<GameT>, &game, 0, 1);
+        return 0;
+#else
+        using GameT = Game<SceneImpl>;
+        GameT game;
+
+        if (!game.isInitialized()) {
+            return 1;
+        }
+
+        Uint32 last_time = SDL_GetTicks();
+        while (game.isRunning()) {
+            Uint32 current_time = SDL_GetTicks();
+            double delta_time = (current_time - last_time) / 1000.0;
+            last_time = current_time;
+            game.tick(delta_time);
+        }
+
+        return 0;
+#endif
+    }
+};
+
+// 利用側に公開するAPI
+export template <scene_fw::SceneAPI SceneImpl>
+int run_game() {
+    return GameRunner::run<SceneImpl>();
+}

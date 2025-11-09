@@ -2,6 +2,7 @@ module;
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <memory>
+#include <tl/expected.hpp>
 export module Scene;
 import GlobalSetting;
 import Input;
@@ -68,7 +69,9 @@ struct ThirdData {
 using Scene = std::variant<InitialData, NextData, ThirdData>;
 
 // 初期シーンの生成(旧実装のロジックを移植)
-inline InitialData make_initial(std::shared_ptr<const global_setting::GlobalSetting> gs) {
+inline tl::expected<InitialData, std::string>
+make_initial(  // Result型を返してフレームワーク側でハンドリング可能にする
+    std::shared_ptr<const global_setting::GlobalSetting> gs) {
     InitialData s{};
     s.setting = std::move(gs);
 
@@ -153,9 +156,11 @@ inline Scene update(const ThirdData& s, const Env& env) {
     // 追加: PAUSE が押されたら InitialData に戻る
     if (env.input.pressed(input::InputKey::PAUSE)) {
         // setting は他シーンと同様に env から渡す
-        InitialData initial =
-            make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
-        return Scene{initial};
+        auto initial = make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
+        if (!initial) {  // 失敗したらシーン維持
+            return s;
+        }
+        return Scene{initial.value()};
     }
 
     return Scene{s};  // 継続(遷移なし)
