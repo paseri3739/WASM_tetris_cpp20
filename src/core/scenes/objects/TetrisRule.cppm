@@ -4,13 +4,18 @@ module;
 #include <cmath>
 #include <entt/entt.hpp>
 #include <memory>
+#include <string>
+#include <tl/expected.hpp>
 #include <utility>
 #include <vector>
 
 export module TetrisRule;
 
-import TetriMino;
-import Position2D;
+// 依存除去: 以下3つの import を削除
+// import TetriMino;
+// import Position2D;
+// import Cell;
+
 import GlobalSetting;
 import SceneFramework;
 import GameKey;
@@ -22,19 +27,47 @@ namespace tetris_rule {
 // エイリアス
 // =============================
 using scene_fw::Env;
+template <class T>
+using Result = tl::expected<T, std::string>;
 
 // =============================
 // ECS コンポーネント／リソース
 // =============================
+
+// 依存除去: テトリミノ関連を ECS 側に再定義
+enum class PieceType { I, O, T, S, Z, J, L };
+enum class PieceStatus { Falling, Landed, Merged };
+enum class PieceDirection { North, East, South, West };
+
+// 色ユーティリティ（元 TetriMino.to_color の置換）
+constexpr SDL_Color to_color(PieceType type) noexcept {
+    switch (type) {
+        case PieceType::I:
+            return SDL_Color{0, 255, 255, 255};  // シアン
+        case PieceType::O:
+            return SDL_Color{255, 255, 0, 255};  // 黄色
+        case PieceType::T:
+            return SDL_Color{128, 0, 128, 255};  // 紫
+        case PieceType::S:
+            return SDL_Color{0, 255, 0, 255};  // 緑
+        case PieceType::Z:
+            return SDL_Color{255, 0, 0, 255};  // 赤
+        case PieceType::J:
+            return SDL_Color{0, 0, 255, 255};  // 青
+        case PieceType::L:
+            return SDL_Color{255, 165, 0, 255};  // オレンジ
+    }
+    return SDL_Color{255, 255, 255, 255};
+}
 
 struct Position {
     int x{}, y{};
 };
 
 struct TetriminoMeta {
-    tetrimino::TetriminoType type{};
-    tetrimino::TetriminoDirection direction{};
-    tetrimino::TetriminoStatus status{};
+    PieceType type{};
+    PieceDirection direction{};
+    PieceStatus status{};
 };
 
 struct ActivePiece {};  // 操作対象
@@ -83,103 +116,96 @@ struct GridResource {
 
 using Coord = std::pair<std::int8_t, std::int8_t>;
 
-static constexpr std::array<Coord, 4> get_cells_north_local(
-    tetrimino::TetriminoType type) noexcept {
-    using TT = tetrimino::TetriminoType;
+// 依存除去: 引数型を ECS の PieceType / PieceDirection に変更
+static constexpr std::array<Coord, 4> get_cells_north_local(PieceType type) noexcept {
     switch (type) {
-        case TT::I:
+        case PieceType::I:
             return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{1, 3}};
-        case TT::O:
+        case PieceType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case TT::T:
+        case PieceType::T:
             return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
-        case TT::S:
+        case PieceType::S:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 0}, Coord{1, 1}};
-        case TT::Z:
+        case PieceType::Z:
             return {Coord{0, 0}, Coord{0, 1}, Coord{1, 1}, Coord{1, 2}};
-        case TT::J:
+        case PieceType::J:
             return {Coord{0, 0}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
-        case TT::L:
+        case PieceType::L:
             return {Coord{0, 2}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
     }
     return {};
 }
 
-static constexpr std::array<Coord, 4> get_cells_east_local(tetrimino::TetriminoType type) noexcept {
-    using TT = tetrimino::TetriminoType;
+static constexpr std::array<Coord, 4> get_cells_east_local(PieceType type) noexcept {
     switch (type) {
-        case TT::I:
+        case PieceType::I:
             return {Coord{0, 2}, Coord{1, 2}, Coord{2, 2}, Coord{3, 2}};
-        case TT::O:
+        case PieceType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case TT::T:
+        case PieceType::T:
             return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case TT::S:
+        case PieceType::S:
             return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
-        case TT::Z:
+        case PieceType::Z:
             return {Coord{0, 2}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case TT::J:
+        case PieceType::J:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{2, 1}};
-        case TT::L:
+        case PieceType::L:
             return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
     }
     return {};
 }
 
-static constexpr std::array<Coord, 4> get_cells_south_local(
-    tetrimino::TetriminoType type) noexcept {
-    using TT = tetrimino::TetriminoType;
+static constexpr std::array<Coord, 4> get_cells_south_local(PieceType type) noexcept {
     switch (type) {
-        case TT::I:
+        case PieceType::I:
             return {Coord{2, 0}, Coord{2, 1}, Coord{2, 2}, Coord{2, 3}};
-        case TT::O:
+        case PieceType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case TT::T:
+        case PieceType::T:
             return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case TT::S:
+        case PieceType::S:
             return {Coord{1, 1}, Coord{1, 2}, Coord{2, 0}, Coord{2, 1}};
-        case TT::Z:
+        case PieceType::Z:
             return {Coord{1, 0}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
-        case TT::J:
+        case PieceType::J:
             return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
-        case TT::L:
+        case PieceType::L:
             return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 0}};
     }
     return {};
 }
 
-static constexpr std::array<Coord, 4> get_cells_west_local(tetrimino::TetriminoType type) noexcept {
-    using TT = tetrimino::TetriminoType;
+static constexpr std::array<Coord, 4> get_cells_west_local(PieceType type) noexcept {
     switch (type) {
-        case TT::I:
+        case PieceType::I:
             return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{3, 1}};
-        case TT::O:
+        case PieceType::O:
             return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case TT::T:
+        case PieceType::T:
             return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
-        case TT::S:
+        case PieceType::S:
             return {Coord{0, 0}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
-        case TT::Z:
+        case PieceType::Z:
             return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 0}};
-        case TT::J:
+        case PieceType::J:
             return {Coord{0, 1}, Coord{1, 1}, Coord{2, 0}, Coord{2, 1}};
-        case TT::L:
+        case PieceType::L:
             return {Coord{0, 0}, Coord{0, 1}, Coord{1, 1}, Coord{2, 1}};
     }
     return {};
 }
 
-static constexpr std::array<Coord, 4> cells_for(tetrimino::TetriminoType type,
-                                                tetrimino::TetriminoDirection dir) noexcept {
-    using TD = tetrimino::TetriminoDirection;
+static constexpr std::array<Coord, 4> cells_for(PieceType type, PieceDirection dir) noexcept {
     switch (dir) {
-        case TD::North:
+        case PieceDirection::North:
             return get_cells_north_local(type);
-        case TD::East:
+        case PieceDirection::East:
             return get_cells_east_local(type);
-        case TD::South:
+        case PieceDirection::South:
             return get_cells_south_local(type);
-        case TD::West:
+        case PieceDirection::West:
             return get_cells_west_local(type);
     }
     return {};
@@ -259,13 +285,13 @@ static inline void resolveDropSystem(entt::registry& r, const GridResource& grid
         for (int i = 0; i < steps; ++i) {
             const int ny = pos.y + step_px;
             if (!can_place(pos.x, ny)) {
-                meta.status = tetrimino::TetriminoStatus::Landed;
+                meta.status = PieceStatus::Landed;
                 break;
             }
             pos.y = ny;
         }
 
-        if (meta.status != tetrimino::TetriminoStatus::Falling) {
+        if (meta.status != PieceStatus::Falling) {
             r.get_or_emplace<LockTimer>(e).sec += env.dt;
         } else if (r.any_of<LockTimer>(e)) {
             r.remove<LockTimer>(e);
@@ -280,7 +306,7 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
     for (auto e : view) {
         auto& meta = view.get<TetriminoMeta>(e);
         auto& lt = view.get<LockTimer>(e);
-        if (meta.status == tetrimino::TetriminoStatus::Falling) continue;
+        if (meta.status == PieceStatus::Falling) continue;
         if (lt.sec < kLockDelaySec) continue;
         to_fix.push_back(e);
     }
@@ -291,16 +317,16 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
 
         std::array<Coord, 4> cells{};
         switch (meta.direction) {
-            case tetrimino::TetriminoDirection::North:
+            case PieceDirection::North:
                 cells = get_cells_north_local(meta.type);
                 break;
-            case tetrimino::TetriminoDirection::East:
+            case PieceDirection::East:
                 cells = get_cells_east_local(meta.type);
                 break;
-            case tetrimino::TetriminoDirection::South:
+            case PieceDirection::South:
                 cells = get_cells_south_local(meta.type);
                 break;
-            case tetrimino::TetriminoDirection::West:
+            case PieceDirection::West:
                 cells = get_cells_west_local(meta.type);
                 break;
         }
@@ -322,9 +348,7 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
 
         auto np = r.create();
         r.emplace<Position>(np, spawn_x, spawn_y);
-        r.emplace<TetriminoMeta>(np, tetrimino::TetriminoType::Z,
-                                 tetrimino::TetriminoDirection::West,
-                                 tetrimino::TetriminoStatus::Falling);
+        r.emplace<TetriminoMeta>(np, PieceType::Z, PieceDirection::West, PieceStatus::Falling);
         r.emplace<ActivePiece>(np);
 
         const double base_rate = (env.setting.dropRate > 0.0) ? (1.0 / env.setting.dropRate) : 0.0;
@@ -364,8 +388,10 @@ static inline void lineClearSystem(GridResource& grid) {
 // 外部公開 API
 // =============================
 
-// ワールド生成
-export inline World make_world(std::shared_ptr<const global_setting::GlobalSetting> gs) {
+// ワールド生成（Result 返しに変更）
+export inline Result<World> make_world(std::shared_ptr<const global_setting::GlobalSetting> gs) {
+    if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
+
     World w{};
     w.registry = std::make_shared<entt::registry>();
     auto& r = *w.registry;
@@ -390,9 +416,7 @@ export inline World make_world(std::shared_ptr<const global_setting::GlobalSetti
 
     w.active = r.create();
     r.emplace<Position>(w.active, spawn_x, spawn_y);
-    r.emplace<TetriminoMeta>(w.active, tetrimino::TetriminoType::Z,
-                             tetrimino::TetriminoDirection::West,
-                             tetrimino::TetriminoStatus::Falling);
+    r.emplace<TetriminoMeta>(w.active, PieceType::Z, PieceDirection::West, PieceStatus::Falling);
     r.emplace<ActivePiece>(w.active);
 
     const double base_rate = (cfg.dropRate > 0.0) ? (1.0 / cfg.dropRate) : 0.0;
@@ -452,17 +476,43 @@ export inline void render_world(const World& w, SDL_Renderer* renderer) {
         SDL_RenderDrawRect(renderer, &outer);
     }
 
-    // ActivePiece 描画（TetriMino の描画を流用）
+    // ActivePiece 描画（TetriMino の描画を流用 -> ECS ローカルで置換）
     auto view = r.view<const ActivePiece, const Position, const TetriminoMeta>();
     for (auto e : view) {
         const auto& pos = view.get<const Position>(e);
         const auto& meta = view.get<const TetriminoMeta>(e);
-        tetrimino::Tetrimino t{meta.type, meta.status, meta.direction, Position2D{pos.x, pos.y}};
+
         const auto* grid = r.try_get<GridResource>(w.grid_singleton);
         const int cw = grid ? grid->cellW : 30;
         const int ch = grid ? grid->cellH : 30;
-        tetrimino::render(t, cw, ch, renderer);
-        tetrimino::render_grid_around(t, renderer, cw, ch);
+
+        // 色設定
+        const SDL_Color color = to_color(meta.type);
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+        // 形状セル
+        const auto cells = cells_for(meta.type, meta.direction);
+        for (const auto& c : cells) {
+            const int x = pos.x + static_cast<int>(c.second) * cw;
+            const int y = pos.y + static_cast<int>(c.first) * ch;
+            SDL_Rect rect = {x, y, cw, ch};
+            SDL_RenderFillRect(renderer, &rect);
+        }
+
+        // 4x4 グリッド（元 render_grid_around 相当）
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        const int grid_w = cw * 4;
+        const int grid_h = ch * 4;
+        SDL_Rect frame = {pos.x, pos.y, grid_w, grid_h};
+        SDL_RenderDrawRect(renderer, &frame);
+        for (int c = 1; c <= 3; ++c) {
+            const int x = pos.x + c * cw;
+            SDL_RenderDrawLine(renderer, x, pos.y, x, pos.y + grid_h);
+        }
+        for (int r0 = 1; r0 <= 3; ++r0) {
+            const int y = pos.y + r0 * ch;
+            SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
+        }
     }
 
     SDL_RenderPresent(renderer);

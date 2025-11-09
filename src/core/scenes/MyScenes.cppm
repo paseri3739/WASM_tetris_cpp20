@@ -31,7 +31,12 @@ inline tl::expected<Scene, std::string> make_initial(
     std::shared_ptr<const global_setting::GlobalSetting> gs) {
     InitialData s{};
     s.setting = gs;
-    s.world = tetris_rule::make_world(gs);
+    const auto world = tetris_rule::make_world(gs);
+    if (!world) {
+        return tl::make_unexpected("world initialization failed.");
+    }
+    s.world = world.value();
+
     return Scene{s};
 }
 
