@@ -85,6 +85,11 @@ struct MoveIntent {
     int dx{0};
     int dy{0};
 };
+
+struct RotateIntent {
+    int dir{0};  // -1: 左回転, +1: 右回転
+};
+
 struct LockTimer {
     double sec{0.0};
 };
@@ -232,6 +237,150 @@ static inline void inputSystem(entt::registry& r, const input::Input& in) {
         auto& sd = view.get<SoftDrop>(e);
         sd.held = (down_key && in.held(*down_key));
         // 左右／回転は MoveIntent を別途積む（省略）
+
+        // --- 修正: 左右は「押下瞬間のみ」1セル分の MoveIntent を積む ---
+        int dx = 0;
+        if (const auto left = game_key::to_sdl_key(game_key::GameKey::LEFT);
+            left && in.pressed(*left))
+            dx -= 1;
+        if (const auto right = game_key::to_sdl_key(game_key::GameKey::RIGHT);
+            right && in.pressed(*right))
+            dx += 1;
+
+        // 同フレームに左右同時押下された場合は相殺（dx=0）
+        if (dx != 0) {
+            auto& mi = r.get_or_emplace<MoveIntent>(e);
+            mi.dx += dx;
+        }
+        // --- ここまで ---
+
+        // --- 追記: 回転は押下瞬間のみ受理 ---
+        int rot = 0;
+        if (const auto rl = game_key::to_sdl_key(game_key::GameKey::ROTATE_LEFT);
+            rl && in.pressed(*rl))
+            rot -= 1;
+        if (const auto rr = game_key::to_sdl_key(game_key::GameKey::ROTATE_RIGHT);
+            rr && in.pressed(*rr))
+            rot += 1;
+
+        // 同フレームに左右回転同時押下なら相殺（rot=0）
+        if (rot != 0) {
+            auto& ri = r.get_or_emplace<RotateIntent>(e);
+            ri.dir += (rot > 0 ? +1 : -1);  // -1/ +1 だけ使う
+            // 念のため -1,0,+1 の範囲に収める
+            if (ri.dir > 1) ri.dir = 1;
+            if (ri.dir < -1) ri.dir = -1;
+        }
+        // --- 追記ここまで ---
+    }
+}
+
+// --- 追記: 方向遷移のヘルパ ---
+static inline PieceDirection rotate_next(PieceDirection cur, int dir /*-1 or +1*/) {
+    if (dir == 0) return cur;
+    // East=+1, West=-1 相当で循環
+    constexpr PieceDirection order[4] = {PieceDirection::North, PieceDirection::East,
+                                         PieceDirection::South, PieceDirection::West};
+    int idx = 0;
+    switch (cur) {
+        case PieceDirection::North:
+            idx = 0;
+            break;
+        case PieceDirection::East:
+            idx = 1;
+            break;
+        case PieceDirection::South:
+            idx = 2;
+            break;
+        case PieceDirection::West:
+            idx = 3;
+            break;
+    }
+    idx = (idx + (dir > 0 ? +1 : -1) + 4) % 4;
+    return order[idx];
+}
+
+// --- 追記: 回転解決（クラシック／壁蹴りなし） ---
+static inline void resolveRotationSystem(entt::registry& r, const GridResource& grid,
+                                         const scene_fw::Env<global_setting::GlobalSetting>& env) {
+    auto view = r.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
+    for (auto e : view) {
+        auto& pos = view.get<Position>(e);
+        auto& meta = view.get<TetriminoMeta>(e);
+        const auto ri = view.get<RotateIntent>(e);
+        r.remove<RotateIntent>(e);
+        if (ri.dir == 0) continue;
+
+        // Oミノは回転しても形状不変（そのまま成功扱いでも挙動同じ）
+        const PieceDirection ndir = (meta.type == PieceType::O)
+                                        ? meta.direction
+                                        : rotate_next(meta.direction, (ri.dir > 0 ? +1 : -1));
+
+        const auto shape = cells_for(meta.type, ndir);
+
+        auto can_place = [&](int px, int py) -> bool {
+            for (auto [rr, cc] : shape) {
+                const int col = (px - grid.origin_x) / grid.cellW + cc;
+                const int row = (py - grid.origin_y) / grid.cellH + rr;
+                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
+                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+            }
+            return true;
+        };
+
+        // 壁蹴りなし: その場で置けるなら回転確定
+        if (can_place(pos.x, pos.y)) {
+            meta.direction = ndir;
+
+            // 回転成功時はロック解除（クラシックな振る舞いの一つ）
+            if (meta.status != PieceStatus::Falling) {
+                meta.status = PieceStatus::Falling;
+            }
+            if (r.any_of<LockTimer>(e)) {
+                r.remove<LockTimer>(e);
+            }
+        }
+        // 置けない場合は不採用（何もしない）
+    }
+}
+
+static inline void resolveLateralSystem(entt::registry& r, const GridResource& grid,
+                                        const Env<global_setting::GlobalSetting>& env) {
+    auto view = r.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
+    for (auto e : view) {
+        auto& pos = view.get<Position>(e);
+        auto& meta = view.get<TetriminoMeta>(e);
+        auto* mi = r.try_get<MoveIntent>(e);
+        if (!mi) continue;
+
+        int steps = mi->dx;
+        mi->dx = 0;  // 水平方向ぶんはここで消費（垂直は resolveDropSystem に委ねる）
+        if (steps == 0) continue;
+
+        const int step_px = env.setting.cellWidth;
+        const auto shape = cells_for(meta.type, meta.direction);
+
+        auto can_place = [&](int px, int py) -> bool {
+            for (auto [rr, cc] : shape) {
+                const int col = (px - grid.origin_x) / grid.cellW + cc;
+                const int row = (py - grid.origin_y) / grid.cellH + rr;
+                if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) return false;
+                if (grid.occ[grid.index(row, col)] == CellStatus::Filled) return false;
+            }
+            return true;
+        };
+
+        const int dir = (steps > 0) ? +1 : -1;
+        for (int i = 0; i < std::abs(steps); ++i) {
+            const int nx = pos.x + dir * step_px;
+            if (!can_place(nx, pos.y)) {
+                // 壁/ブロックに当たる場合はそれ以上進めない（残りは破棄）
+                break;
+            }
+            pos.x = nx;
+        }
+
+        // 横移動ではロック状態は変更しない（縦落下系に委譲）
     }
 }
 
@@ -437,7 +586,16 @@ export inline void step_world(const World& w, const Env<global_setting::GlobalSe
 
     inputSystem(r, env.input);
     gravitySystem(r, env.dt);
+
+    // --- ここから追記: 回転を最初に解決 ---
+    resolveRotationSystem(r, *grid, env);
+    // --- 追記ここまで ---
+
+    // --- ここから追記: 横 → 縦 の順で解決 ---
+    resolveLateralSystem(r, *grid, env);
     resolveDropSystem(r, *grid, env);
+    // --- 追記ここまで ---
+
     lockAndMergeSystem(r, *grid, env);
     lineClearSystem(*grid);
 }
