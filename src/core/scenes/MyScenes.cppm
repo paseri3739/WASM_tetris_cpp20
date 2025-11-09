@@ -15,6 +15,7 @@ import Cell;
 import TetriMino;
 import Position2D;
 import TetrisRule; // ★ 追加
+import GameKey;
 
 export namespace my_scenes {
 
@@ -151,7 +152,8 @@ inline tl::expected<Scene, std::string> make_initial(
 
 inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 入力に応じて遷移
-    if (env.input.pressed(input::InputKey::PAUSE)) {
+    const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
+    if (env.input.pressed(*key)) {
         NextData next{};
         return Scene{next};  // 遷移
     }
@@ -167,7 +169,7 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
         updated.fall_accumulator += env.dt;
 
         // 一定間隔ごとに1マス落下させる
-        constexpr double fall_interval = 0.3;  // 秒: 適宜調整
+        const double fall_interval = env.setting.dropRate;  // 秒: 適宜調整
         while (updated.fall_accumulator >= fall_interval) {
             updated.fall_accumulator -= fall_interval;
 
@@ -245,7 +247,8 @@ inline void render(const InitialData& s, SDL_Renderer* renderer) {
 // --- Next シーン: update / render ---
 // =============================
 inline Scene update(const NextData& s, const Env<global_setting::GlobalSetting>& env) {
-    if (env.input.pressed(input::InputKey::PAUSE)) {
+    const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
+    if (env.input.pressed(*key)) {
         ThirdData third{};
         return Scene{third};
     }
@@ -262,7 +265,8 @@ inline void render(const NextData&, SDL_Renderer* renderer) {
 // --- Third シーン: update / render ---
 // =============================
 inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>& env) {
-    if (env.input.pressed(input::InputKey::PAUSE)) {
+    const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
+    if (env.input.pressed(*key)) {
         auto initial = make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
         if (!initial) {
             return Scene{s};

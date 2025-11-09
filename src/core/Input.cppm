@@ -8,52 +8,36 @@ module;
 export module Input;
 
 namespace input {
+
 /**
  * 抽象キー入力を表現するenum
+ *
+ * ※ 本モジュールでは SDL のキーコードをそのまま扱うため、
+ *    この enum は利用側で独自に定義して SDL_Keycode とマッピングしてください。
+ *    （例: GameInputKey など）
  */
-export enum class InputKey { UP, DOWN, LEFT, RIGHT, ROTATE_LEFT, ROTATE_RIGHT, DROP, PAUSE, QUIT };
+// export enum class InputKey { UP, DOWN, LEFT, RIGHT, ROTATE_LEFT, ROTATE_RIGHT, DROP, PAUSE, QUIT
+// };
 
 /**
  * SDL キーコードと InputKey のマッピング
  * SDL のキーコードを InputKey に変換するためのマッピングを定義します。
  * これにより、SDL イベントからゲームの入力キーに変換できます。
+ *
+ * ※ 本モジュールでは固定マッピングを提供せず、
+ *    SDL_Keycode をそのまま上位へ渡し、呼び出し側で任意のマッピングを行ってください。
  */
-inline const std::pair<SDL_Keycode, InputKey> SDL_TO_INPUT_KEY_MAP[] = {
-    // 移動
-    {SDLK_LEFT, InputKey::LEFT},
-    {SDLK_a, InputKey::LEFT},
-    {SDLK_RIGHT, InputKey::RIGHT},
-    {SDLK_d, InputKey::RIGHT},
-    {SDLK_UP, InputKey::UP},
-    {SDLK_w, InputKey::UP},
-    {SDLK_DOWN, InputKey::DOWN},
-    {SDLK_s, InputKey::DOWN},
-    // 回転
-    {SDLK_z, InputKey::ROTATE_LEFT},
-    {SDLK_LCTRL, InputKey::ROTATE_LEFT},
-    {SDLK_x, InputKey::ROTATE_RIGHT},
-    {SDLK_UP, InputKey::ROTATE_RIGHT},  // 二重割り当て（W/↑で回転も許容する場合）
-    // ハードドロップ
-    {SDLK_SPACE, InputKey::DROP},
-    // ポーズ
-    {SDLK_p, InputKey::PAUSE},
-    {SDLK_RETURN, InputKey::PAUSE},  // Enterでもポーズ許容
-    // 終了
-    {SDLK_ESCAPE, InputKey::QUIT},
-    {SDLK_q, InputKey::QUIT},
-};
+// inline const std::pair<SDL_Keycode, InputKey> SDL_TO_INPUT_KEY_MAP[] = { ... };
 
 /**
  * SDL キーコードを InputKey に変換する関数
  * @param code SDL_Keycode
  * @return std::optional<InputKey> 変換結果（存在しない場合は std::nullopt）
+ *
+ * ※ 本モジュールでは変換を行いません。
+ *    呼び出し側で SDL_Keycode -> 独自の enum への変換関数を定義してください。
  */
-export inline std::optional<InputKey> to_input_key(SDL_Keycode code) {
-    for (const auto& [sdl, input] : SDL_TO_INPUT_KEY_MAP) {
-        if (sdl == code) return input;
-    }
-    return std::nullopt;
-}
+// export inline std::optional<InputKey> to_input_key(SDL_Keycode code) { ... }
 
 /**
  * キー入力の状態を表現する構造体
@@ -67,23 +51,13 @@ export struct InputState {
     bool is_held = false;
 };
 
-// enum class を unordered_map のキーに使うためのハッシュ特化
 }  // namespace input
 
-namespace std {
-template <>
-struct hash<input::InputKey> {
-    size_t operator()(const input::InputKey& k) const noexcept {
-        using U = std::underlying_type_t<input::InputKey>;
-        return std::hash<U>{}(static_cast<U>(k));
-    }
-};
-}  // namespace std
-
 namespace input {
+
 /**
  * 入力状態を表現する構造体
- * - key_states: 各キーの状態を保持するマップ
+ * - key_states: 各キー(SDL_Keycode)の状態を保持するマップ
  * - clear_frame_state: フレーム状態をクリアした新インスタンスを返す
  * - to_string: 入力状態を文字列に変換する
  *
@@ -92,15 +66,13 @@ namespace input {
  * - any_pressed/any_released/any_held: いずれかのキーが該当するか
  * - first_pressed/first_released/first_held: 優先順に最初に該当したキー
  * - get_input_key: 全体の集約状態（いずれかが立っていれば OR 集約を返す）
+ *
+ * ※ 優先順や抽象キーは、本モジュールでは固定しません。
+ *    必要に応じて呼び出し側で SDL_Keycode の配列・enum を定義してご利用ください。
  */
 export struct Input {
-    std::unordered_map<InputKey, InputState> key_states;
-
-    // 判定優先順（UI/ゲーム側での期待に応じて調整可能）
-    static constexpr InputKey PRIORITY_ORDER[] = {
-        InputKey::UP,    InputKey::DOWN,        InputKey::LEFT,
-        InputKey::RIGHT, InputKey::ROTATE_LEFT, InputKey::ROTATE_RIGHT,
-        InputKey::DROP,  InputKey::PAUSE,       InputKey::QUIT};
+    // SDL_Keycode をそのままキーとして扱う
+    std::unordered_map<SDL_Keycode, InputState> key_states;
 
     // フレーム状態をクリアした新インスタンスを返す
     [[nodiscard]] std::shared_ptr<const Input> clear_frame_state() const {
@@ -112,16 +84,16 @@ export struct Input {
         return next;
     }
 
-    // --- 低レベル: 単一キーの状態取得 ---
-    [[nodiscard]] bool pressed(InputKey k) const {
+    // --- 低レベル: 単一キー(SDL_Keycode)の状態取得 ---
+    [[nodiscard]] bool pressed(SDL_Keycode k) const {
         if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_pressed;
         return false;
     }
-    [[nodiscard]] bool released(InputKey k) const {
+    [[nodiscard]] bool released(SDL_Keycode k) const {
         if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_released;
         return false;
     }
-    [[nodiscard]] bool held(InputKey k) const {
+    [[nodiscard]] bool held(SDL_Keycode k) const {
         if (auto it = key_states.find(k); it != key_states.end()) return it->second.is_held;
         return false;
     }
@@ -144,19 +116,23 @@ export struct Input {
     }
 
     // --- 高レベル: 優先順で最初に該当したキーを返す ---
-    [[nodiscard]] std::optional<InputKey> first_pressed() const {
-        for (auto k : PRIORITY_ORDER)
-            if (pressed(k)) return k;
+    // 呼び出し側が優先順コンテナを用意して渡す形にします。
+    template <typename It>
+    [[nodiscard]] std::optional<SDL_Keycode> first_pressed(It begin, It end) const {
+        for (auto it = begin; it != end; ++it)
+            if (pressed(*it)) return *it;
         return std::nullopt;
     }
-    [[nodiscard]] std::optional<InputKey> first_released() const {
-        for (auto k : PRIORITY_ORDER)
-            if (released(k)) return k;
+    template <typename It>
+    [[nodiscard]] std::optional<SDL_Keycode> first_released(It begin, It end) const {
+        for (auto it = begin; it != end; ++it)
+            if (released(*it)) return *it;
         return std::nullopt;
     }
-    [[nodiscard]] std::optional<InputKey> first_held() const {
-        for (auto k : PRIORITY_ORDER)
-            if (held(k)) return k;
+    template <typename It>
+    [[nodiscard]] std::optional<SDL_Keycode> first_held(It begin, It end) const {
+        for (auto it = begin; it != end; ++it)
+            if (held(*it)) return *it;
         return std::nullopt;
     }
 

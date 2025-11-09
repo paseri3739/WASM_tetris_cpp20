@@ -5,7 +5,6 @@ module;
 export module Game;
 import SceneFramework; // 新規
 import Input;
-import GlobalSetting;
 
 // =============================
 // フレーム処理（Game 本体）
@@ -106,7 +105,8 @@ class Game final {
         // ポーリングはGameのみが担当し、他のモジュールは入力状態を受け取るだけにする
         const auto input = poll_input(input_);
         //  ゲーム全体の入力処理はここだけ
-        if (input->pressed(input::InputKey::QUIT)) {
+        //  SDL_Keycode をそのまま利用し、利用側で任意の enum にマッピング可能とする
+        if (input->pressed(SDLK_q)) {
             running_ = false;
         }
         input_ = input;
@@ -117,6 +117,9 @@ class Game final {
      * 抽象入力を取得する関数
      * @param previous_input 以前の入力状態(エッジ検出のために使用)
      * @return 新しい入力状態
+     *
+     * SDL のキーコード(SDL_Keycode)をそのまま保持し、
+     * 抽象キー(enum等)へのマッピングは利用側で行う方針とします。
      */
     std::shared_ptr<const input::Input> poll_input(
         std::shared_ptr<const input::Input> previous_input) {
@@ -134,24 +137,26 @@ class Game final {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                input->key_states[input::InputKey::QUIT].is_pressed = true;
+                // ウィンドウクローズは直接ゲーム終了フラグに反映
+                running_ = false;
                 continue;
             }
 
             if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) continue;
 
-            auto maybe_key = input::to_input_key(event.key.keysym.sym);
-            if (!maybe_key.has_value()) continue;
-
-            input::InputKey key = maybe_key.value();
-            input::InputState& state = input->key_states[key];
+            const SDL_Keycode code = event.key.keysym.sym;
+            input::InputState& state = input->key_states[code];
 
             if (event.type == SDL_KEYDOWN) {
-                if (!state.is_held) state.is_pressed = true;
+                if (!state.is_held) {
+                    state.is_pressed = true;
+                }
                 state.is_held = true;
-            } else {
-                state.is_held = false;
-                state.is_released = true;
+            } else {  // SDL_KEYUP
+                if (state.is_held) {
+                    state.is_held = false;
+                    state.is_released = true;
+                }
             }
         }
 
@@ -207,6 +212,7 @@ struct GameRunner {
 #endif
     }
 };
+
 // 利用側に公開するAPI
 export template <class Setting, class SceneImpl>
     requires scene_fw::SceneAPI<SceneImpl, Setting>
