@@ -12,9 +12,9 @@ export constexpr int columns = 10;
 
 export enum class FailReason { OutOfBounds, Collision };
 
-export tl::expected<tetrimino::Tetrimino, FailReason> drop(const tetrimino::Tetrimino& tetrimino,
-                                                           const grid::Grid& grid,
-                                                           const scene_fw::Env env) {
+export tl::expected<tetrimino::Tetrimino, FailReason> drop(
+    const tetrimino::Tetrimino& tetrimino, const grid::Grid& grid,
+    const scene_fw::Env<global_setting::GlobalSetting> env) {
     // TODO:
     const auto new_position =
         Position2D(tetrimino.position.x, tetrimino.position.y + env.setting.cellHeight);

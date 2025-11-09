@@ -11,17 +11,17 @@ import GlobalSetting;
 // フレーム処理（Game 本体）
 // =============================
 
-export template <scene_fw::SceneAPI SceneImpl>
+export template <class Setting, class SceneImpl>
+    requires scene_fw::SceneAPI<SceneImpl, Setting>
 class Game final {
    public:
-    explicit Game()
+    explicit Game(std::shared_ptr<const Setting> setting)
         : window_(nullptr, SDL_DestroyWindow),
           renderer_(nullptr, SDL_DestroyRenderer),
           input_(nullptr),
           running_(true),
           initialized_(false),
-          setting_(std::make_shared<global_setting::GlobalSetting>(
-              10, 20, 30, 30, 60))  // 旧: Grid 依存に合わせて初期化
+          setting_(std::move(setting))  // 旧: Grid 依存に合わせて初期化
     {
         // SDLの初期化
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -90,12 +90,12 @@ class Game final {
     typename SceneImpl::Scene scene_;
 
     std::shared_ptr<const input::Input> input_;
-    std::shared_ptr<const global_setting::GlobalSetting> setting_;
+    std::shared_ptr<const Setting> setting_;  // ここが型パラメータ化
     bool running_ = true;
     bool initialized_ = false;
 
     void update(double delta_time) {
-        scene_fw::Env env{*input_, *setting_, delta_time};
+        scene_fw::Env<Setting> env{*input_, *setting_, delta_time};
         // ロジックはすべて SceneImpl 側へ委譲
         scene_ = SceneImpl::step(std::move(scene_), env);
     }
@@ -162,8 +162,6 @@ class Game final {
 // =============================
 // ランナー: main から呼ぶだけにする
 // =============================
-
-// 内部実装用
 struct GameRunner {
 #ifdef __EMSCRIPTEN__
     template <class GameT>
@@ -177,11 +175,11 @@ struct GameRunner {
     }
 #endif
 
-    template <scene_fw::SceneAPI SceneImpl>
-    static int run() {
+    template <class Setting, class SceneImpl>
+    static int run(std::shared_ptr<const Setting> setting) {
 #ifdef __EMSCRIPTEN__
-        using GameT = Game<SceneImpl>;
-        static GameT game;  // Emscriptenではプログラム終了まで生存させる
+        using GameT = Game<Setting, SceneImpl>;
+        static GameT game{std::move(setting)};  // Emscriptenではプログラム終了まで生存させる
 
         if (!game.isInitialized()) {
             return 1;
@@ -190,8 +188,8 @@ struct GameRunner {
         emscripten_set_main_loop_arg(&GameRunner::main_loop<GameT>, &game, 0, 1);
         return 0;
 #else
-        using GameT = Game<SceneImpl>;
-        GameT game;
+        using GameT = Game<Setting, SceneImpl>;
+        GameT game{std::move(setting)};
 
         if (!game.isInitialized()) {
             return 1;
@@ -209,9 +207,9 @@ struct GameRunner {
 #endif
     }
 };
-
 // 利用側に公開するAPI
-export template <scene_fw::SceneAPI SceneImpl>
-int run_game() {
-    return GameRunner::run<SceneImpl>();
+export template <class Setting, class SceneImpl>
+    requires scene_fw::SceneAPI<SceneImpl, Setting>
+int run_game(std::shared_ptr<const Setting> setting) {
+    return GameRunner::run<Setting, SceneImpl>(std::move(setting));
 }

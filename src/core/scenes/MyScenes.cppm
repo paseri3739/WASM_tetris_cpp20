@@ -149,7 +149,7 @@ inline tl::expected<Scene, std::string> make_initial(
 // --- Initial シーン: update / render (ECS + TetrisRule::drop)
 // =============================
 
-inline Scene update(const InitialData& s, const Env& env) {
+inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 入力に応じて遷移
     if (env.input.pressed(input::InputKey::PAUSE)) {
         NextData next{};
@@ -244,7 +244,7 @@ inline void render(const InitialData& s, SDL_Renderer* renderer) {
 // =============================
 // --- Next シーン: update / render ---
 // =============================
-inline Scene update(const NextData& s, const Env& env) {
+inline Scene update(const NextData& s, const Env<global_setting::GlobalSetting>& env) {
     if (env.input.pressed(input::InputKey::PAUSE)) {
         ThirdData third{};
         return Scene{third};
@@ -261,7 +261,7 @@ inline void render(const NextData&, SDL_Renderer* renderer) {
 // =============================
 // --- Third シーン: update / render ---
 // =============================
-inline Scene update(const ThirdData& s, const Env& env) {
+inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>& env) {
     if (env.input.pressed(input::InputKey::PAUSE)) {
         auto initial = make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting));
         if (!initial) {
@@ -289,7 +289,7 @@ struct Impl {
         return my_scenes::make_initial(std::move(gs));
     }
 
-    static Scene step(Scene current, const Env& env) {
+    static Scene step(Scene current, const Env<global_setting::GlobalSetting>& env) {
         return std::visit([&](auto const& ss) -> Scene { return update(ss, env); }, current);
     }
 
