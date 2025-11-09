@@ -26,15 +26,30 @@ export struct CommandBuffer {
 export namespace cmd {
 
 // emplace_or_replace<T>(entity, args...)
+// ここで“引数の完全転送”を成立させ、コピーを避ける
 template <class T, class... Args>
 Command emplace_or_replace(entt::entity e, Args&&... args) {
-    return Command{// ★ mutable を付けるだけ
-                   [=](entt::registry& r) mutable {
-                       r.emplace_or_replace<T>(e, std::forward<Args>(args)...);
-                   }};
+    using Tup = std::tuple<std::decay_t<Args>...>;
+    Tup pack{std::forward<Args>(args)...};  // ここで一度ムーブ/コピー確定
+    return Command{[e, pack = std::move(pack)](entt::registry& r) mutable {
+        std::apply(
+            [&](auto&&... xs) {
+                // pack の中身はこの時点ですべて右辺値として扱える
+                r.emplace_or_replace<T>(e, std::forward<decltype(xs)>(xs)...);
+            },
+            std::move(pack));
+    }};
 }
 
-// remove<T>(entity)
+// 値を直接渡すオーバーロードも用意（明示 move 向け）
+template <class T>
+Command emplace_or_replace(entt::entity e, T&& value) {
+    auto holder = std::make_unique<std::decay_t<T>>(std::forward<T>(value));
+    return Command{[e, holder = std::move(holder)](entt::registry& r) mutable {
+        r.emplace_or_replace<std::decay_t<T>>(e, std::move(*holder));
+    }};
+}
+
 template <class T>
 Command remove(entt::entity e) {
     return Command{[=](entt::registry& r) {
@@ -42,14 +57,12 @@ Command remove(entt::entity e) {
     }};
 }
 
-// destroy(entity)
 inline Command destroy(entt::entity e) {
     return Command{[=](entt::registry& r) {
         if (r.valid(e)) r.destroy(e);
     }};
 }
 
-// create() + 連鎖付与用の“生成フック”
 inline Command create_then(std::function<void(entt::registry&, entt::entity)> f) {
     return Command{[f = std::move(f)](entt::registry& r) {
         const auto e = r.create();
