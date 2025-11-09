@@ -18,6 +18,18 @@ export tl::expected<tetrimino::Tetrimino, FailReason> drop(
     // TODO:
     const auto new_position =
         Position2D(tetrimino.position.x, tetrimino.position.y + env.setting.cellHeight);
+    if (new_position.x < 0) {
+        return tl::make_unexpected(FailReason::OutOfBounds);
+    }
+    if (new_position.x >= grid.width) {
+        return tl::make_unexpected(FailReason::Collision);
+    }
+    if (new_position.y < 0) {
+        return tl::make_unexpected(FailReason::OutOfBounds);
+    }
+    if (new_position.y >= grid.height) {
+        return tl::make_unexpected(FailReason::Collision);
+    }
     const tetrimino::Tetrimino new_tetrimino =
         tetrimino::Tetrimino(tetrimino.type, tetrimino.status, tetrimino.direction, new_position);
     return new_tetrimino;
