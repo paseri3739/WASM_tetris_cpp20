@@ -2,8 +2,8 @@ module;
 #include <SDL2/SDL.h>
 #include <iostream>  // エラーログ用
 #include <memory>
-import SceneFramework; // 新規
 export module Game;
+import SceneFramework; // 新規
 import Input;
 import GlobalSetting;
 
