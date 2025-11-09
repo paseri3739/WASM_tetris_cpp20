@@ -104,8 +104,8 @@ struct GridResource {
     int origin_y{0};
     std::vector<CellStatus> occ;  // row-major
 
-    inline int index(int r, int c) const noexcept { return r * cols + c; }
-    inline SDL_Rect rect_rc(int r, int c) const noexcept {
+    [[nodiscard]] inline int index(int r, int c) const noexcept { return r * cols + c; }
+    [[nodiscard]] inline SDL_Rect rect_rc(int r, int c) const noexcept {
         return SDL_Rect{origin_x + c * cellW, origin_y + r * cellH, cellW, cellH};
     }
 };
@@ -236,9 +236,9 @@ static inline void inputSystem(entt::registry& r, const input::Input& in) {
 }
 
 static inline void gravitySystem(entt::registry& r, double dt) {
-    constexpr int kMaxDropsPerFrame = 6;
     auto view = r.view<ActivePiece, Gravity, FallAccCells, SoftDrop>();
     for (auto e : view) {
+        constexpr int kMaxDropsPerFrame = 6;
         auto& g = view.get<Gravity>(e);
         auto& acc = view.get<FallAccCells>(e);
         auto& sd = view.get<SoftDrop>(e);
@@ -341,8 +341,8 @@ static inline void lockAndMergeSystem(entt::registry& r, GridResource& grid,
         r.destroy(e);
 
         // 新規スポーン
-        const int spawn_col = 3;
-        const int spawn_row = 3;
+        constexpr int spawn_col = 3;
+        constexpr int spawn_row = 3;
         const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
         const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
@@ -389,7 +389,8 @@ static inline void lineClearSystem(GridResource& grid) {
 // =============================
 
 // ワールド生成（Result 返しに変更）
-export inline Result<World> make_world(std::shared_ptr<const global_setting::GlobalSetting> gs) {
+export inline Result<World> make_world(
+    const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
     if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
 
     World w{};
@@ -409,8 +410,8 @@ export inline Result<World> make_world(std::shared_ptr<const global_setting::Glo
     grid.occ.assign(grid.rows * grid.cols, CellStatus::Empty);
 
     // アクティブピース
-    const int spawn_col = 3;
-    const int spawn_row = 3;
+    constexpr int spawn_col = 3;
+    constexpr int spawn_row = 3;
     const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
     const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
@@ -428,7 +429,7 @@ export inline Result<World> make_world(std::shared_ptr<const global_setting::Glo
 }
 
 // 1フレーム更新
-export inline void step_world(World& w, const Env<global_setting::GlobalSetting>& env) {
+export inline void step_world(const World& w, const Env<global_setting::GlobalSetting>& env) {
     if (!w.registry) return;
     auto& r = *w.registry;
     auto* grid = r.try_get<GridResource>(w.grid_singleton);
