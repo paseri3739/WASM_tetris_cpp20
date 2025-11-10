@@ -72,9 +72,11 @@ inline Command create_then(std::function<void(entt::registry&, entt::entity)> f)
 
 }  // namespace cmd
 
+export using CommandList = std::vector<Command>;
+
 // 純粋 System のシグネチャ：const registry + Resources -> CommandBuffer 追記のみ
 template <class Resources>
-using PureSystem = void (*)(const entt::registry& view, const Resources& res, CommandBuffer& out);
+using PureSystem = CommandList (*)(const entt::registry& view, const Resources& res);
 
 // フェーズ/スケジュール：競合を分けて逐次適用
 export template <class Resources>
@@ -91,11 +93,13 @@ struct Schedule {
 export template <class Resources>
 inline void run_schedule(entt::registry& world, const Resources& res,
                          const Schedule<Resources>& sch) {
-    CommandBuffer buf;
     for (const auto& ph : sch.phases) {
-        buf.clear();
-        const entt::registry& view = world;  // 読み取り専用ビュー
-        for (auto sys : ph.systems) sys(view, res, buf);
-        buf.apply_all(world);  // 遅延副作用の境界
+        CommandList buf;
+        const entt::registry& view = world;
+        for (auto sys : ph.systems) {
+            buf = sys(view, res);  // RVO/ムーブ
+            for (auto& c : buf) c.apply(world);
+            buf.clear();
+        }
     }
 }
