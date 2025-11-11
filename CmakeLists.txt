@@ -90,6 +90,9 @@ endif()
 if(EMSCRIPTEN)
         target_link_options(app PRIVATE
                 "-sUSE_SDL=2" # SDL2ポートをリンク
+                "-sUSE_SDL_IMAGE=2"
+                "-sUSE_SDL_MIXER=2"
+                "-sUSE_SDL_TTF=2"
                 "-sALLOW_MEMORY_GROWTH=1"
                 "-sASSERTIONS=1"
         )
