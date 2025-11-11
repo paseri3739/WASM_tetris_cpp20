@@ -1,7 +1,9 @@
 module;
 #include <SDL2/SDL.h>
-#include <iostream>  // エラーログ用
+#include <functional>  // 追加
+#include <iostream>    // エラーログ用
 #include <memory>
+#include <vector>  // 追加
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -115,10 +117,29 @@ class Game final {
     double fps_elapsed_seconds_ = 0.0;
     uint32_t fps_frame_count_ = 0;
 
+    // --- 追加: Setting 更新パッチの一時保管場所 ---
+    using SettingPatch = typename scene_fw::Env<Setting>::SettingPatch;
+    std::vector<SettingPatch> pending_setting_patches_;
+
     void update(double delta_time) {
+        // --- Env 構築（更新予約のキュー関数をセット）---
         scene_fw::Env<Setting> env{*input_, *setting_, delta_time};
-        // ロジックはすべて SceneImpl 側へ委譲
+        env.queue_setting_update = [this](SettingPatch patch) {
+            pending_setting_patches_.push_back(std::move(patch));
+        };
+
+        // ロジックはすべて SceneImpl 側へ委譲（この段階では setting_ はまだ不変）
         scene_ = SceneImpl::step(std::move(scene_), env);
+
+        // --- Game 側で適用タイミングを制御：update → render の間で一括適用 ---
+        if (!pending_setting_patches_.empty()) {
+            // 複数予約されている場合は順次適用（関数合成相当）
+            for (auto& patch : pending_setting_patches_) {
+                // null 安全: patch は必ず新しい共有ポインタを返す想定
+                setting_ = patch(setting_);
+            }
+            pending_setting_patches_.clear();
+        }
     }
 
     void render() { SceneImpl::draw(scene_, renderer_.get()); }
