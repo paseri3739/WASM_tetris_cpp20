@@ -44,6 +44,10 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
 
     InitialData u = s;
     tetris_rule::step_world(u.world, env);
+    if (tetris_rule::is_gameover(u.world)) {
+        NextData next{};
+        return Scene{next};
+    }
     return Scene{std::move(u)};
 }
 

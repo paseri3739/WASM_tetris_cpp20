@@ -120,6 +120,11 @@ struct HardDropRequest {};  // 押下フレームのみ付与
 // 盤面占有
 enum class CellStatus : std::uint8_t { Empty, Filled };
 
+// ★ 追加：ゲームオーバー状態（Grid のシングルトンにぶら下げる）
+struct GameOver {
+    bool value{false};
+};
+
 // グリッド情報＋占有
 struct GridResource {
     int rows{};
@@ -752,6 +757,48 @@ static CommandList lineClearSystem_pure(const entt::registry& view, const Tetris
 }
 
 // =============================
+// ゲームオーバー判定（純粋）
+// --- 追記: 生成された ActivePiece が置けない場合にフラグを立てる ---
+// =============================
+static CommandList gameOverCheckSystem_pure(const entt::registry& view,
+                                            const TetrisResources& res) {
+    CommandList out;
+
+    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    if (!grid) return out;
+
+    // 既に GameOver 済みなら何もしない
+    if (const auto* go = view.try_get<GameOver>(res.grid_e); go && go->value) return out;
+
+    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta>();
+    for (auto e : v) {
+        const auto& pos = v.get<const Position>(e);
+        const auto& meta = v.get<const TetriminoMeta>(e);
+
+        const auto shape = cells_for(meta.type, meta.direction);
+
+        auto can_place = [&](int px, int py) -> bool {
+            for (auto [rr, cc] : shape) {
+                const int col = (px - grid->origin_x) / grid->cellW + cc;
+                const int row = (py - grid->origin_y) / grid->cellH + rr;
+                if (col < 0 || col >= grid->cols || row < 0 || row >= grid->rows) return false;
+                if (grid->occ[grid->index(row, col)] == CellStatus::Filled) return false;
+            }
+            return true;
+        };
+
+        if (!can_place(pos.x, pos.y)) {
+            // ★ 追加：ゲームオーバーフラグを ON
+            const auto gameover = GameOver{true};
+            out.emplace_back(cmd::emplace_or_replace<GameOver>(res.grid_e, gameover));
+            // 以降のループは不要（単一アクティブ前提）。複数あっても一つで判定十分。
+            break;
+        }
+    }
+    return out;
+}
+
+// =============================
 // 外部公開 API
 // =============================
 
@@ -768,6 +815,8 @@ export inline tl::expected<World, std::string> make_world(
     // GridResource（singleton 的エンティティ）
     world.grid_singleton = registry.create();
     auto& grid = registry.emplace<GridResource>(world.grid_singleton);
+    // ★ 追加：ゲームオーバーフラグ初期化
+    registry.emplace<GameOver>(world.grid_singleton, GameOver{false});
     grid.rows = cfg.gridRows;
     grid.cols = cfg.gridColumns;
     grid.cellW = cfg.cellWidth;
@@ -815,8 +864,7 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
     TetrisResources res{env.input, env, w.grid_singleton};
 
     Schedule<TetrisResources> sch{{
-        Phase<TetrisResources>{{&inputSystem_pure}},
-        Phase<TetrisResources>{{&gravitySystem_pure}},
+        Phase<TetrisResources>{{&inputSystem_pure}}, Phase<TetrisResources>{{&gravitySystem_pure}},
         Phase<TetrisResources>{{&resolveRotationSystem_pure}},
         Phase<TetrisResources>{{&resolveLateralSystem_pure}},
         Phase<TetrisResources>{{&hardDropSystem_pure}},
@@ -824,9 +872,20 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
         Phase<TetrisResources>{{&lockTimerTickSystem_pure}},  // ★ 追加
         Phase<TetrisResources>{{&lockAndMergeSystem_pure}},
         Phase<TetrisResources>{{&lineClearSystem_pure}},
+        Phase<TetrisResources>{{&gameOverCheckSystem_pure}},  // ★ 追加：最終チェック
     }};
 
     run_schedule(world, res, sch);
+}
+
+export bool is_gameover(const World& w) {
+    if (!w.registry) return false;
+    auto& r = *w.registry;
+    if (!r.valid(w.grid_singleton)) return false;
+    if (auto* go = r.try_get<GameOver>(w.grid_singleton)) {
+        return go->value;
+    }
+    return false;
 }
 
 // 描画（副作用：従来どおり直接描画でOK）
