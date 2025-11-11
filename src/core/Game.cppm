@@ -1,5 +1,6 @@
 module;
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <functional>  // 追加
 #include <iostream>    // エラーログ用
 #include <memory>
@@ -30,6 +31,13 @@ class Game final {
         // SDLの初期化
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
             std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+            running_ = false;
+            return;
+        }
+
+        // SDL_ttf 初期化
+        if (TTF_WasInit() == 0 && TTF_Init() == -1) {
+            std::cerr << "TTF_Init failed: " << TTF_GetError() << std::endl;
             running_ = false;
             return;
         }
