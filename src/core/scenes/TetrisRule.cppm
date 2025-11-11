@@ -492,6 +492,34 @@ static CommandList resolveLateralSystem_pure(const entt::registry& view,
 }
 
 // =============================
+// ロックタイマ加算（純粋）：着地中は毎フレーム dt を加算
+// =============================
+static CommandList lockTimerTickSystem_pure(const entt::registry& view,
+                                            const TetrisResources& res) {
+    CommandList out;
+
+    auto v = view.view<const ActivePiece, const TetriminoMeta>();
+    for (auto e : v) {
+        const auto& meta = v.get<const TetriminoMeta>(e);
+
+        if (meta.status == PieceStatus::Falling) {
+            // 落下中はロックタイマ不要
+            out.emplace_back(cmd::remove<LockTimer>(e));
+            continue;
+        }
+
+        // --- 着地状態: 毎フレーム加算 ---
+        LockTimer lt{};
+        if (auto* old = view.try_get<LockTimer>(e)) {
+            lt = *old;
+        }
+        lt.sec += res.env.dt;
+        out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
+    }
+    return out;
+}
+
+// =============================
 // 縦落下解決（純粋）
 // =============================
 static CommandList resolveDropSystem_pure(const entt::registry& view, const TetrisResources& res) {
@@ -532,15 +560,17 @@ static CommandList resolveDropSystem_pure(const entt::registry& view, const Tetr
             pos.y = ny;
         }
 
-        if (meta.status != PieceStatus::Falling) {
-            // ロックタイマ加算
-            LockTimer lt{};
-            if (auto* old = view.try_get<LockTimer>(e)) lt = *old;
-            lt.sec += res.env.dt;
-            out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
-        } else {
-            out.emplace_back(cmd::remove<LockTimer>(e));
-        }
+        // if (meta.status != PieceStatus::Falling) {
+        //     // ロックタイマ加算
+        //     LockTimer lt{};
+        //     if (auto* old = view.try_get<LockTimer>(e)) {
+        //         lt = *old;
+        //     }
+        //     lt.sec += res.env.dt;
+        //     out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
+        // } else {
+        //     out.emplace_back(cmd::remove<LockTimer>(e));
+        // }
 
         out.emplace_back(cmd::emplace_or_replace<Position>(e, pos));
         out.emplace_back(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
@@ -779,6 +809,7 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
         Phase<TetrisResources>{{&resolveLateralSystem_pure}},
         Phase<TetrisResources>{{&hardDropSystem_pure}},
         Phase<TetrisResources>{{&resolveDropSystem_pure}},
+        Phase<TetrisResources>{{&lockTimerTickSystem_pure}},  // ★ 追加
         Phase<TetrisResources>{{&lockAndMergeSystem_pure}},
         Phase<TetrisResources>{{&lineClearSystem_pure}},
     }};
