@@ -1,5 +1,27 @@
-//
-// Created by Masato Suzuki on 2025/11/11.
-//
+// ===========================
+// File: MyScenes-Core.ixx (exported module partition)
+// ===========================
+module;
+#include <entt/entt.hpp>
+#include <memory>
+#include <variant>
 
-export module MyScenesCore;
+export module MyScenes:Core;  // パーティション名
+
+import GlobalSetting;
+import TetrisRule;
+
+export namespace my_scenes {
+
+// シーン純粋データ（World を抱えるだけ）
+struct InitialData {
+    std::shared_ptr<const global_setting::GlobalSetting> setting;
+    tetris_rule::World world;
+};
+
+struct NextData {};
+struct ThirdData {};
+
+using Scene = std::variant<InitialData, NextData, ThirdData>;
+
+}  // namespace my_scenes
