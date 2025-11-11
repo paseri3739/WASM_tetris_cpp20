@@ -128,7 +128,10 @@ struct GridResource {
     int cellH{};
     int origin_x{0};
     int origin_y{0};
-    std::vector<CellStatus> occ;  // row-major
+    // ★ 追加：占有セルのテトリミノ種別（描画色復元用）
+    // occ[index] == Filled のときのみ参照する
+    std::vector<PieceType> occ_type;  // row-major, same size as occ
+    std::vector<CellStatus> occ;      // row-major
 
     [[nodiscard]] inline int index(int row, int column) const noexcept {
         return row * cols + column;
@@ -666,7 +669,9 @@ static CommandList lockAndMergeSystem_pure(const entt::registry& view, const Tet
             const int col = (pos.x - grid.origin_x) / grid.cellW + cc;
             const int row = (pos.y - grid.origin_y) / grid.cellH + rr;
             if (0 <= row && row < grid.rows && 0 <= col && col < grid.cols) {
-                grid.occ[grid.index(row, col)] = CellStatus::Filled;
+                const int idx = grid.index(row, col);
+                grid.occ[idx] = CellStatus::Filled;
+                grid.occ_type[idx] = meta.type;  // ★ 追加：設置したピース種別を保持
             }
         }
 
@@ -724,7 +729,10 @@ static CommandList lineClearSystem_pure(const entt::registry& view, const Tetris
         if (!full) {
             if (write != r0) {
                 for (int c0 = 0; c0 < grid.cols; ++c0) {
-                    grid.occ[grid.index(write, c0)] = grid.occ[grid.index(r0, c0)];
+                    const int src = grid.index(r0, c0);
+                    const int dst = grid.index(write, c0);
+                    grid.occ[dst] = grid.occ[src];
+                    grid.occ_type[dst] = grid.occ_type[src];  // ★ 追加：色も移動
                 }
             }
             --write;
@@ -732,7 +740,10 @@ static CommandList lineClearSystem_pure(const entt::registry& view, const Tetris
     }
     for (int r0 = write; r0 >= 0; --r0) {
         for (int c0 = 0; c0 < grid.cols; ++c0) {
-            grid.occ[grid.index(r0, c0)] = CellStatus::Empty;
+            const int idx = grid.index(r0, c0);
+            grid.occ[idx] = CellStatus::Empty;
+            // ★ 任意：既定値でクリア（未使用だが保守性のため）
+            grid.occ_type[idx] = PieceType::I;
         }
     }
 
@@ -764,6 +775,7 @@ export inline tl::expected<World, std::string> make_world(
     grid.origin_x = 0;
     grid.origin_y = 0;
     grid.occ.assign(grid.rows * grid.cols, CellStatus::Empty);
+    grid.occ_type.assign(grid.rows * grid.cols, PieceType::I);  // 初期値は未使用だが埋めておく
 
     // アクティブピース
     constexpr int spawn_col = 3;
@@ -834,7 +846,11 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
 
                 // 塗り
                 if (grid->occ[grid->index(row, col)] == CellStatus::Filled) {
-                    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
+                    // ★ 追加：設置済みテトリミノの色で描画
+                    const PieceType t = grid->occ_type[grid->index(row, col)];
+                    const SDL_Color color = to_color(t);
+                    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
                 } else {
                     SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255);
                 }
