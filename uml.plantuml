@@ -1,0 +1,148 @@
+@startuml
+title 現代的ゲームエンジン設計（構造図） -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+hide circle
+hide members
+
+package "Framework" {
+  class Game {
+    +tick(dt)
+    --
+    -processInput()
+    -update(dt)
+    -render()
+  }
+
+  class "SceneBox<Setting>" as SceneBox <<type-erasure>> {
+    +step(env): void
+    +renderIO(): IO<Unit>
+    --
+    -state : any  <<現在シーンData>>
+    -vtable : { stepFn, renderFn }
+  }
+
+  class "Env<Setting>" as Env <<value>> {
+    +input
+    +setting
+    +dt
+    +update_setting(fn)
+    +replace_setting(next)
+  }
+
+  class "IO<T>" as IO <<effect>>
+  class Unit <<value>>
+
+  package "ECS (fecs)" {
+    class World {
+      -reg : entt::registry
+    }
+
+    class "WorldView<Reads...>" as WorldView <<RO>>
+    class "CommandBuffer<Writes...>" as CmdBuf <<command>>
+    class "System<RD,WR,Fn>" as System <<pure>>
+    class "Phase<...>" as Phase
+    class "Schedule<...>" as Schedule
+    class Runner {
+      +run_schedule(world, res, sch)
+    }
+  }
+
+  class FontStore {
+    +get(path, pt): shared_ptr<TTF_Font>
+  }
+
+  class "global_setting::GlobalSetting" as GlobalSetting {
+    +fontStore : shared_ptr<FontStore>
+    +defaultFontPath : string
+    +defaultFontPt   : int
+    +canvasWidth/Height
+  }
+}
+
+package "User (scenes)" {
+  package "initial" {
+    class "initial::Data" as S0 {
+      +gs : shared_ptr<const GlobalSetting>
+      +world : entt::registry  <<or ハンドル>>
+      +label : string
+      +labelTex : unique_ptr<SDL_Texture>
+      +dirty : bool
+    }
+    class "update(const Data&, Env) : NextVariant<Data>" as upd0 <<fn>>
+    class "renderIO(const Data&) : IO<Unit>" as rnd0 <<fn>>
+  }
+
+  package "next" {
+    class "next::Data" as S1
+    class "update(const Data&, Env) : NextVariant<Data>" as upd1 <<fn>>
+    class "renderIO(const Data&) : IO<Unit>" as rnd1 <<fn>>
+  }
+
+  package "third" {
+    class "third::Data" as S2
+    class "update(const Data&, Env) : NextVariant<Data>" as upd2 <<fn>>
+    class "renderIO(const Data&) : IO<Unit>" as rnd2 <<fn>>
+  }
+
+  note right of S0
+    各シーンは「構造体Data」と
+    自由関数 update/renderIO を提供
+    （クラス/継承は不要）
+  end note
+}
+
+' 関係（構造）
+Game o-- SceneBox
+Game ..> Env
+Game ..> IO : 実行（renderer* を与える）
+Env --> GlobalSetting : 参照
+GlobalSetting o-- FontStore
+
+' SceneBox はシーン自由関数を ADL で呼び出す
+SceneBox ..> upd0 : ADL dispatch
+SceneBox ..> rnd0 : ADL dispatch
+SceneBox ..> upd1
+SceneBox ..> rnd1
+SceneBox ..> upd2
+SceneBox ..> rnd2
+
+' シーンDataとECS
+S0 --> World : world 所有/管理
+WorldView ..> World : 参照(RO)
+System ..> WorldView : 入力
+System ..> CmdBuf : 出力（純粋）
+Runner ..> CmdBuf : 適用
+Runner ..> World : 書き込み（集中管理）
+
+' 遷移（型安全FSMの宣言）
+class "next_scenes<T>" as NextDecl <<meta>>
+NextDecl -[hidden]d- S0
+NextDecl -[hidden]d- S1
+NextDecl -[hidden]d- S2
+S0 ..> S1 : next_scenes<initial::Data> に列挙\n(variant<自分|S1|S2>)
+S0 ..> S2
+S1 ..> S2 : next_scenes<next::Data>
+S2 ..> S0 : next_scenes<third::Data>
+
+' ノート（設計原則）
+note bottom of Runner
+  Systemは純関数：
+  (WorldView<Reads...>, Resources) -> CommandBuffer<Writes...>
+  副作用は Runner が一括適用
+end note
+
+note bottom of SceneBox
+  updateの戻り型が NextVariant<T> で
+  不正遷移は型で不可能。
+  型が変われば内部 state を差し替え。
+end note
+
+note bottom of IO
+  renderIOは IO<Unit> を返す。
+  SDL呼び出しはラムダ内に直接記述し、
+  Game::render() が一箇所で実行。
+end note
+
+@enduml
