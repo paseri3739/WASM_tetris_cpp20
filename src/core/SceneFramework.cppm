@@ -48,7 +48,7 @@ struct Env {
 template <class Impl, class Setting>
 concept SceneAPI =
     requires(typename Impl::Scene& s, const typename Impl::Scene& cs, const Env<Setting>& env,
-             SDL_Renderer* r, std::shared_ptr<const Setting> setting_ptr) {
+             SDL_Renderer* const r, std::shared_ptr<const Setting> setting_ptr) {
         // Scene 型を持つこと
         typename Impl::Scene;
 
