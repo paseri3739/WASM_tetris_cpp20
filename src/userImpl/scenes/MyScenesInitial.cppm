@@ -38,14 +38,14 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
     // 例：PAUSE で次のシーンへ
     const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
     if (env.input.pressed(*pause_key)) {
-        NextData next{};
+        ThirdData next{};
         return Scene{next};
     }
 
     InitialData u = s;
     tetris_rule::step_world(u.world, env);
     if (tetris_rule::is_gameover(u.world)) {
-        NextData next{};
+        ThirdData next{};
         return Scene{next};
     }
     return Scene{std::move(u)};
