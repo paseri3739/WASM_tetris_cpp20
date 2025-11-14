@@ -2,31 +2,31 @@ cmake_minimum_required(VERSION 3.28)
 
 # Homebrew LLVM の clang/clang++ を優先採用（初回 configure 時のみ効く）
 # 既に -DCMAKE_CXX_COMPILER を渡されている場合は尊重します。
-if (APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
-    # よくある Homebrew のインストール先を優先探索
-    list(APPEND _LLVM_HINTS
-            /opt/homebrew/opt/llvm/bin # Apple Silicon
-            /usr/local/opt/llvm/bin # Intel Mac
-    )
-    find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
-    if (LLVM_CLANGXX)
-        # C 言語は使わないなら C は設定不要（不要な警告回避のため）
-        set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
-    endif ()
-endif ()
+if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
+        # よくある Homebrew のインストール先を優先探索
+        list(APPEND _LLVM_HINTS
+                /opt/homebrew/opt/llvm/bin # Apple Silicon
+                /usr/local/opt/llvm/bin # Intel Mac
+        )
+        find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
+        if(LLVM_CLANGXX)
+                # C 言語は使わないなら C は設定不要（不要な警告回避のため）
+                set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
+        endif()
+endif()
 
 # macOS SDK を明示(clang-scan-deps が system headers を確実に解決できるように）
-if (APPLE AND NOT CMAKE_OSX_SYSROOT)
-    execute_process(
-            COMMAND xcrun --sdk macosx --show-sdk-path
-            OUTPUT_VARIABLE _SDK_PATH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-    )
-    if (_SDK_PATH)
-        set(CMAKE_OSX_SYSROOT "${_SDK_PATH}" CACHE PATH "macOS SDK path" FORCE)
-    endif ()
-endif ()
+if(APPLE AND NOT CMAKE_OSX_SYSROOT)
+        execute_process(
+                COMMAND xcrun --sdk macosx --show-sdk-path
+                OUTPUT_VARIABLE _SDK_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+        )
+        if(_SDK_PATH)
+                set(CMAKE_OSX_SYSROOT "${_SDK_PATH}" CACHE PATH "macOS SDK path" FORCE)
+        endif()
+endif()
 
 project(tertis LANGUAGES CXX)
 
@@ -37,18 +37,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 参考: AppleClang が選ばれてしまった場合は明示的に落とす（早期に気づくため）
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    message(FATAL_ERROR
-            "AppleClang が選択されています。Homebrew LLVM の clang++ を使用するように設定してください。"
-    )
-endif ()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        message(FATAL_ERROR
+                "AppleClang が選択されています。Homebrew LLVM の clang++ を使用するように設定してください。"
+        )
+endif()
 
 # ▼ 共通: モジュールを収めるライブラリを作る（**ここが重要**）
+# core ライブラリ（フレームワーク部分）
 add_library(core)
 
 # 通常ソース（.cppm をモジュールIFユニットとして集約）
-file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
+file(GLOB_RECURSE CORE_MODULE_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cppm"
 )
 
 # モジュールIFユニットを FILE_SET CXX_MODULES として宣言
@@ -56,19 +57,41 @@ file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
 target_sources(core
         PUBLIC
         FILE_SET cxxmods TYPE CXX_MODULES FILES
-        ${MODULE_SOURCES}
+        ${CORE_MODULE_SOURCES}
 )
 
 # 共通パッケージ（コア側にぶら下げる）
 find_package(tl-expected CONFIG REQUIRED)
 target_link_libraries(core PUBLIC tl::expected)
 
+# ▼ userImpl: ユーザ実装側ライブラリ
+add_library(user_impl)
+
+file(GLOB_RECURSE USER_IMPL_MODULE_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/userImpl/*.cppm"
+)
+
+file(GLOB_RECURSE USER_IMPL_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/userImpl/*.cpp"
+)
+
+target_sources(user_impl
+        PUBLIC
+        FILE_SET cxxmods TYPE CXX_MODULES FILES
+        ${USER_IMPL_MODULE_SOURCES}
+        PRIVATE
+        ${USER_IMPL_SOURCES}
+)
+
+# userImpl から core を利用する
+target_link_libraries(user_impl PUBLIC core)
+
 # ▼ 本番アプリ（**テストとは分離**）
 add_executable(app)
 target_sources(app PRIVATE
         src/main.cpp
 )
-target_link_libraries(app PRIVATE core)
+target_link_libraries(app PRIVATE core user_impl)
 
 # assets ディレクトリをビルドディレクトリにコピー
 add_custom_target(copy_assets ALL
@@ -85,58 +108,80 @@ add_dependencies(app copy_assets)
 # find_package(GTest CONFIG REQUIRED) はテスト節で行う
 
 # ネイティブ専用 SDL2 関連パッケージ
-if (NOT EMSCRIPTEN)
-    find_package(SDL2 CONFIG REQUIRED)
-    target_link_libraries(app PRIVATE SDL2::SDL2 SDL2::SDL2main)
-    find_package(SDL2_image CONFIG REQUIRED)
-    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
-    find_package(SDL2_mixer CONFIG REQUIRED)
-    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>)
-    find_package(SDL2_ttf CONFIG REQUIRED)
-    target_link_libraries(app PRIVATE $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>)
-endif ()
+if(NOT EMSCRIPTEN)
+        find_package(SDL2 CONFIG REQUIRED)
+        # userImpl はレンダリングで SDL2 を使用
+        target_link_libraries(user_impl PRIVATE SDL2::SDL2 SDL2::SDL2main)
+        # 既存の構成との互換性維持のため app にもそのままリンク
+        target_link_libraries(app PRIVATE SDL2::SDL2 SDL2::SDL2main)
+
+        find_package(SDL2_image CONFIG REQUIRED)
+        target_link_libraries(user_impl PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
+        )
+        target_link_libraries(app PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
+        )
+
+        find_package(SDL2_mixer CONFIG REQUIRED)
+        target_link_libraries(user_impl PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>
+        )
+        target_link_libraries(app PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_mixer::SDL2_mixer>,SDL2_mixer::SDL2_mixer,SDL2_mixer::SDL2_mixer-static>
+        )
+
+        find_package(SDL2_ttf CONFIG REQUIRED)
+        target_link_libraries(user_impl PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
+        )
+        target_link_libraries(app PRIVATE
+                $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
+        )
+endif()
 
 # Emscripten + SDL2 (Ports) を使う場合のリンクオプション
 # -sUSE_SDL=2 はリンク時オプションなので target_link_options で指定
-if (EMSCRIPTEN)
-    target_link_options(app PRIVATE
-            "-sUSE_SDL=2"
-            "-sUSE_SDL_IMAGE=2"
-            "-sUSE_SDL_MIXER=2"
-            "-sUSE_SDL_TTF=2"
-            "-sALLOW_MEMORY_GROWTH=1"
-            "-sASSERTIONS=1"
+if(EMSCRIPTEN)
+        target_link_options(app PRIVATE
+                "-sUSE_SDL=2"
+                "-sUSE_SDL_IMAGE=2"
+                "-sUSE_SDL_MIXER=2"
+                "-sUSE_SDL_TTF=2"
+                "-sALLOW_MEMORY_GROWTH=1"
+                "-sASSERTIONS=1"
 
-            # ここから追加: assets ディレクトリを仮想 FS にプリロード
-            "--preload-file=assets"
-    )
+                # ここから追加: assets ディレクトリを仮想 FS にプリロード
+                "--preload-file=assets"
+        )
 
-    set_target_properties(app PROPERTIES SUFFIX ".html")
-endif ()
+        set_target_properties(app PROPERTIES SUFFIX ".html")
+endif()
 
 
 # ▼ テスト用バイナリ（**GUI 依存を切り離す**)
 include(CTest)
-if (BUILD_TESTING AND NOT EMSCRIPTEN)
-    find_package(GTest CONFIG REQUIRED)
+if(BUILD_TESTING AND NOT EMSCRIPTEN)
+        find_package(GTest CONFIG REQUIRED)
 
-    # tests フォルダ以下のすべての .cpp を自動的に収集
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
-    )
+        # tests フォルダ以下のすべての .cpp を自動的に収集
+        file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+        )
 
-    add_executable(app_tests
-            ${TEST_SOURCES}
-    )
-    target_link_libraries(app_tests PRIVATE core GTest::gtest_main)
+        add_executable(app_tests
+                ${TEST_SOURCES}
+        )
+        # core と userImpl の両方をテスト対象に含める
+        target_link_libraries(app_tests PRIVATE core user_impl GTest::gtest_main)
 
-    enable_testing()
-    include(GoogleTest)
-    gtest_discover_tests(app_tests
-            DISCOVERY_TIMEOUT 30
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    )
-endif ()
+        enable_testing()
+        include(GoogleTest)
+        gtest_discover_tests(app_tests
+                DISCOVERY_TIMEOUT 30
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+endif()
 
 
 # 任意: デバッグ用に選択されたコンパイラ/SDK をログ表示

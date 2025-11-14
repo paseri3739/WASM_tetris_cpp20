@@ -9,7 +9,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
-                "CMAKE_MAKE_PROGRAM": "ninja"
+                "CMAKE_MAKE_PROGRAM": "ninja",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -27,7 +28,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake",
                 "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-                "CMAKE_CXX_COMPILER": "$env{EMSCRIPTEN}/em++"
+                "CMAKE_CXX_COMPILER": "$env{EMSCRIPTEN}/em++",
+                "BUILD_TESTING": "OFF"
             }
         },
         {

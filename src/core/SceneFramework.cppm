@@ -5,7 +5,6 @@ module;
 #include <tl/expected.hpp>
 export module SceneFramework;
 import Input;
-import GlobalSetting;
 export namespace scene_fw {
 
 // 任意の設定型 Setting を扱う Env
