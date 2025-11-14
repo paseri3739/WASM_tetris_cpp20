@@ -299,19 +299,24 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
 // =============================
 // 入力（純粋）：意図を追加
 // =============================
-static CommandList inputSystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList inputSystem_pure(
+    ReadOnlyView<ActivePiece, SoftDrop, MoveIntent, RotateIntent, HardDropRequest> ro,
+    WriteCommands<SoftDrop, MoveIntent, RotateIntent, HardDropRequest> wr,
+    const TetrisResources& res) {
     CommandList out;
     const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
-    auto v = view.view<const ActivePiece, const SoftDrop>();
+    auto v = ro.view<ActivePiece, SoftDrop>();
+
+    auto moveView = ro.view<MoveIntent>();
+    auto rotView = ro.view<RotateIntent>();
 
     for (auto e : v) {
         // SoftDrop held 更新（読み取り専用ビュー → “置換コマンド”）
         {
-            const auto* sd = view.try_get<SoftDrop>(e);
-            if (!sd) continue;
-            SoftDrop next = *sd;
+            const auto& sd = v.template get<SoftDrop>(e);
+            SoftDrop next = sd;
             next.held = (down_key && res.input.held(*down_key));
-            out.emplace_back(cmd::emplace_or_replace<SoftDrop>(e, next));
+            out.emplace_back(wr.emplace_or_replace<SoftDrop>(e, next));
         }
 
         // 左右／回転は MoveIntent / RotateIntent を押下瞬間のみ積む（元コメント維持）
@@ -326,9 +331,9 @@ static CommandList inputSystem_pure(const entt::registry& view, const TetrisReso
 
         if (dx != 0) {
             MoveIntent mi{};
-            if (auto* old = view.try_get<MoveIntent>(e)) mi = *old;
+            if (moveView.contains(e)) mi = moveView.template get<MoveIntent>(e);
             mi.dx += dx;
-            out.emplace_back(cmd::emplace_or_replace<MoveIntent>(e, mi));
+            out.emplace_back(wr.emplace_or_replace<MoveIntent>(e, mi));
         }
         // --- ここまで ---
 
@@ -343,18 +348,18 @@ static CommandList inputSystem_pure(const entt::registry& view, const TetrisReso
 
         if (rot != 0) {
             RotateIntent ri{};
-            if (auto* old = view.try_get<RotateIntent>(e)) ri = *old;
+            if (rotView.contains(e)) ri = rotView.template get<RotateIntent>(e);
             ri.dir += (rot > 0 ? +1 : -1);  // 念のため -1..+1 に収める
             if (ri.dir > 1) ri.dir = 1;
             if (ri.dir < -1) ri.dir = -1;
-            out.emplace_back(cmd::emplace_or_replace<RotateIntent>(e, ri));
+            out.emplace_back(wr.emplace_or_replace<RotateIntent>(e, ri));
         }
         // --- 追記ここまで ---
 
         // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
         if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
             drop && res.input.pressed(*drop)) {
-            out.emplace_back(cmd::emplace_or_replace<HardDropRequest>(e));
+            out.emplace_back(wr.emplace_or_replace<HardDropRequest>(e));
         }
         // --- 追記ここまで ---
     }
@@ -364,15 +369,19 @@ static CommandList inputSystem_pure(const entt::registry& view, const TetrisReso
 // =============================
 // 重力（純粋）：FallAccCells と MoveIntent.dy を更新
 // =============================
-static CommandList gravitySystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList gravitySystem_pure(
+    ReadOnlyView<ActivePiece, Gravity, FallAccCells, SoftDrop, MoveIntent> ro,
+    WriteCommands<FallAccCells, MoveIntent> wr, const TetrisResources& res) {
     CommandList out;
-    auto v = view.view<const ActivePiece, const Gravity, const FallAccCells, const SoftDrop>();
+    auto v = ro.view<ActivePiece, Gravity, FallAccCells, SoftDrop>();
+    auto moveView = ro.view<MoveIntent>();
+
     for (auto e : v) {
         constexpr int kMaxDropsPerFrame = 6;
-        const auto& g = v.get<const Gravity>(e);
-        const auto& sd = v.get<const SoftDrop>(e);
+        const auto& g = v.template get<Gravity>(e);
+        const auto& sd = v.template get<SoftDrop>(e);
 
-        FallAccCells acc = v.get<const FallAccCells>(e);
+        FallAccCells acc = v.template get<FallAccCells>(e);
         const double rate = g.rate_cps * (sd.held ? sd.multiplier : 1.0);
         acc.cells += res.env.dt * rate;
 
@@ -381,15 +390,15 @@ static CommandList gravitySystem_pure(const entt::registry& view, const TetrisRe
 
         if (steps > 0) {
             MoveIntent mi{};
-            if (auto* old = view.try_get<MoveIntent>(e)) mi = *old;
+            if (moveView.contains(e)) mi = moveView.template get<MoveIntent>(e);
             mi.dy += steps;
             acc.cells -= steps;  // ← 発生分だけ減算して蓄積は維持
 
-            out.emplace_back(cmd::emplace_or_replace<MoveIntent>(e, mi));
+            out.emplace_back(wr.emplace_or_replace<MoveIntent>(e, mi));
         }
 
         // ← 重要: ステップの有無に関わらず、毎フレーム 蓄積を書き戻す
-        out.emplace_back(cmd::emplace_or_replace<FallAccCells>(e, acc));
+        out.emplace_back(wr.emplace_or_replace<FallAccCells>(e, acc));
     }
     return out;
 }
@@ -398,19 +407,19 @@ static CommandList gravitySystem_pure(const entt::registry& view, const TetrisRe
 // 回転解決（純粋）
 // --- 追記: 回転解決（クラシック／壁蹴りなし） ---
 // =============================
-static CommandList resolveRotationSystem_pure(const entt::registry& view,
-                                              const TetrisResources& res) {
+static CommandList resolveRotationSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, RotateIntent, LockTimer> ro,
+    WriteCommands<RotateIntent, TetriminoMeta, LockTimer> wr, const TetrisResources& res) {
     CommandList out;
-    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
 
-    auto v =
-        view.view<const ActivePiece, const Position, const TetriminoMeta, const RotateIntent>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, RotateIntent>();
     for (auto e : v) {
-        const auto& pos = v.get<const Position>(e);
-        auto meta = v.get<const TetriminoMeta>(e);  // コピーして書換える
-        const auto& ri = v.get<const RotateIntent>(e);
-        out.emplace_back(cmd::remove<RotateIntent>(e));  // 消費
+        const auto& pos = v.template get<Position>(e);
+        auto meta = v.template get<TetriminoMeta>(e);  // コピーして書換える
+        const auto& ri = v.template get<RotateIntent>(e);
+        out.emplace_back(wr.remove<RotateIntent>(e));  // 消費
 
         if (ri.dir == 0) continue;
 
@@ -437,8 +446,8 @@ static CommandList resolveRotationSystem_pure(const entt::registry& view,
             if (meta.status != PieceStatus::Falling) {
                 meta.status = PieceStatus::Falling;
             }
-            out.emplace_back(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
-            out.emplace_back(cmd::remove<LockTimer>(e));
+            out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
+            out.emplace_back(wr.remove<LockTimer>(e));
         }
         // 置けない場合は不採用（何もしない）
     }
@@ -449,24 +458,25 @@ static CommandList resolveRotationSystem_pure(const entt::registry& view,
 // 横移動解決（純粋）
 // --- ここから追記: 横 → 縦 の順で解決 ---
 // =============================
-static CommandList resolveLateralSystem_pure(const entt::registry& view,
-                                             const TetrisResources& res) {
+static CommandList resolveLateralSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, MoveIntent> ro,
+    WriteCommands<MoveIntent, Position> wr, const TetrisResources& res) {
     CommandList out;
-    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
 
-    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const MoveIntent>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : v) {
-        auto pos = v.get<const Position>(e);
-        const auto& meta = v.get<const TetriminoMeta>(e);
-        const auto& mi = v.get<const MoveIntent>(e);
+        auto pos = v.template get<Position>(e);
+        const auto& meta = v.template get<TetriminoMeta>(e);
+        const auto& mi = v.template get<MoveIntent>(e);
 
         int steps = mi.dx;
         // 水平方向ぶんはここで消費（垂直は resolveDrop へ委譲）
         if (mi.dx != 0) {
             MoveIntent next = mi;
             next.dx = 0;
-            out.emplace_back(cmd::emplace_or_replace<MoveIntent>(e, next));
+            out.emplace_back(wr.emplace_or_replace<MoveIntent>(e, next));
         }
         if (steps == 0) continue;
 
@@ -492,7 +502,7 @@ static CommandList resolveLateralSystem_pure(const entt::registry& view,
             }
             pos.x = nx;
         }
-        out.emplace_back(cmd::emplace_or_replace<Position>(e, pos));
+        out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
 
         // 横移動ではロック状態は変更しない（縦落下系に委譲）
     }
@@ -502,27 +512,31 @@ static CommandList resolveLateralSystem_pure(const entt::registry& view,
 // =============================
 // ロックタイマ加算（純粋）：着地中は毎フレーム dt を加算
 // =============================
-static CommandList lockTimerTickSystem_pure(const entt::registry& view,
+static CommandList lockTimerTickSystem_pure(ReadOnlyView<ActivePiece, TetriminoMeta, LockTimer> ro,
+                                            WriteCommands<LockTimer> wr,
                                             const TetrisResources& res) {
     CommandList out;
 
-    auto v = view.view<const ActivePiece, const TetriminoMeta>();
+    auto v = ro.view<ActivePiece, TetriminoMeta>();
+    auto ltView = ro.view<LockTimer>();
+    (void)res;
+
     for (auto e : v) {
-        const auto& meta = v.get<const TetriminoMeta>(e);
+        const auto& meta = v.template get<TetriminoMeta>(e);
 
         if (meta.status == PieceStatus::Falling) {
             // 落下中はロックタイマ不要
-            out.emplace_back(cmd::remove<LockTimer>(e));
+            out.emplace_back(wr.remove<LockTimer>(e));
             continue;
         }
 
         // --- 着地状態: 毎フレーム加算 ---
         LockTimer lt{};
-        if (auto* old = view.try_get<LockTimer>(e)) {
-            lt = *old;
+        if (ltView.contains(e)) {
+            lt = ltView.template get<LockTimer>(e);
         }
         lt.sec += res.env.dt;
-        out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
+        out.emplace_back(wr.emplace_or_replace<LockTimer>(e, lt));
     }
     return out;
 }
@@ -530,20 +544,22 @@ static CommandList lockTimerTickSystem_pure(const entt::registry& view,
 // =============================
 // 縦落下解決（純粋）
 // =============================
-static CommandList resolveDropSystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList resolveDropSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, MoveIntent> ro,
+    WriteCommands<MoveIntent, Position, TetriminoMeta> wr, const TetrisResources& res) {
     CommandList out;
-    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
 
-    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const MoveIntent>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, MoveIntent>();
     for (auto e : v) {
-        auto pos = v.get<const Position>(e);
-        auto meta = v.get<const TetriminoMeta>(e);
-        const auto& mi = v.get<const MoveIntent>(e);
+        auto pos = v.template get<Position>(e);
+        auto meta = v.template get<TetriminoMeta>(e);
+        const auto& mi = v.template get<MoveIntent>(e);
 
         int steps = mi.dy;
         // 縦方向を消費
-        out.emplace_back(cmd::remove<MoveIntent>(e));
+        out.emplace_back(wr.remove<MoveIntent>(e));
         if (steps <= 0) continue;
 
         const int step_px = res.env.setting.cellHeight;
@@ -580,8 +596,8 @@ static CommandList resolveDropSystem_pure(const entt::registry& view, const Tetr
         //     out.emplace_back(cmd::remove<LockTimer>(e));
         // }
 
-        out.emplace_back(cmd::emplace_or_replace<Position>(e, pos));
-        out.emplace_back(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
+        out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
+        out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
     }
     return out;
 }
@@ -589,16 +605,18 @@ static CommandList resolveDropSystem_pure(const entt::registry& view, const Tetr
 // =============================
 // ハードドロップ（純粋）
 // =============================
-static CommandList hardDropSystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList hardDropSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, HardDropRequest> ro,
+    WriteCommands<Position, TetriminoMeta, LockTimer, HardDropRequest> wr,
+    const TetrisResources& res) {
     CommandList out;
-    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
 
-    auto v =
-        view.view<const ActivePiece, const Position, const TetriminoMeta, const HardDropRequest>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, HardDropRequest>();
     for (auto e : v) {
-        auto pos = v.get<const Position>(e);
-        auto meta = v.get<const TetriminoMeta>(e);
+        auto pos = v.template get<Position>(e);
+        auto meta = v.template get<TetriminoMeta>(e);
 
         const int step_py = res.env.setting.cellHeight;  // 1セルのピクセル
         const auto shape = cells_for(meta.type, meta.direction);
@@ -624,10 +642,10 @@ static CommandList hardDropSystem_pure(const entt::registry& view, const TetrisR
         LockTimer lt{};
         lt.sec = kLockDelaySec;
 
-        out.emplace_back(cmd::emplace_or_replace<Position>(e, pos));
-        out.emplace_back(cmd::emplace_or_replace<TetriminoMeta>(e, meta));
-        out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
-        out.emplace_back(cmd::remove<HardDropRequest>(e));  // 消費
+        out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
+        out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
+        out.emplace_back(wr.emplace_or_replace<LockTimer>(e, lt));
+        out.emplace_back(wr.remove<HardDropRequest>(e));  // 消費
     }
     return out;
 }
@@ -635,25 +653,26 @@ static CommandList hardDropSystem_pure(const entt::registry& view, const TetrisR
 // =============================
 // ロック & マージ（純粋）
 // =============================
-static CommandList lockAndMergeSystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList lockAndMergeSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, LockTimer> ro,
+    WriteCommands<GridResource> wr, const TetrisResources& res) {
     CommandList out;
-    const auto* pgrid = view.try_get<GridResource>(res.grid_e);
-    if (!pgrid) return out;
-    auto grid = *pgrid;  // 書換え用コピー（最後に置換コマンドで反映）
+    if (!ro.valid(res.grid_e)) return out;
+    auto grid = ro.get<GridResource>(res.grid_e);  // 書換え用コピー（最後に置換コマンドで反映）
 
     std::vector<entt::entity> to_fix;
-    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta, const LockTimer>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
     for (auto e : v) {
-        const auto& meta = v.get<const TetriminoMeta>(e);
-        const auto& lt = v.get<const LockTimer>(e);
+        const auto& meta = v.template get<TetriminoMeta>(e);
+        const auto& lt = v.template get<LockTimer>(e);
         if (meta.status == PieceStatus::Falling) continue;
         if (lt.sec < kLockDelaySec) continue;
         to_fix.push_back(e);
     }
 
     for (auto e : to_fix) {
-        const auto& pos = view.get<const Position>(e);
-        const auto& meta = view.get<const TetriminoMeta>(e);
+        const auto& pos = v.template get<Position>(e);
+        const auto& meta = v.template get<TetriminoMeta>(e);
 
         std::array<Coord, 4> cells{};
         switch (meta.direction) {
@@ -681,10 +700,10 @@ static CommandList lockAndMergeSystem_pure(const entt::registry& view, const Tet
         }
 
         // アクティブピース破棄
-        out.emplace_back(cmd::destroy(e));
+        out.emplace_back(wr.destroy(e));
 
         // 新規スポーン（7-Bag）
-        out.emplace_back(cmd::create_then([&](entt::registry& r, entt::entity ne) {
+        out.emplace_back(wr.create_then([&](entt::registry& r, entt::entity ne) {
             auto& g = r.get<GridResource>(res.grid_e);
             constexpr int spawn_col = 3;
             constexpr int spawn_row = 3;
@@ -709,18 +728,19 @@ static CommandList lockAndMergeSystem_pure(const entt::registry& view, const Tet
     }
 
     // Grid 書換えを発行
-    out.emplace_back(cmd::emplace_or_replace<GridResource>(res.grid_e, grid));
+    out.emplace_back(wr.emplace_or_replace<GridResource>(res.grid_e, grid));
     return out;
 }
 
 // =============================
 // ライン消去（純粋）
 // =============================
-static CommandList lineClearSystem_pure(const entt::registry& view, const TetrisResources& res) {
+static CommandList lineClearSystem_pure(ReadOnlyView<GridResource> ro,
+                                        WriteCommands<GridResource> wr,
+                                        const TetrisResources& res) {
     CommandList out;
-    const auto* pgrid = view.try_get<GridResource>(res.grid_e);
-    if (!pgrid) return out;
-    auto grid = *pgrid;  // コピーを編集し、最後に置換
+    if (!ro.valid(res.grid_e)) return out;
+    auto grid = ro.get<GridResource>(res.grid_e);  // コピーを編集し、最後に置換
 
     int write = grid.rows - 1;
     for (int r0 = grid.rows - 1; r0 >= 0; --r0) {
@@ -752,7 +772,8 @@ static CommandList lineClearSystem_pure(const entt::registry& view, const Tetris
         }
     }
 
-    out.emplace_back(cmd::emplace_or_replace<GridResource>(res.grid_e, grid));
+    out.emplace_back(wr.emplace_or_replace<GridResource>(res.grid_e, grid));
+    (void)res;
     return out;
 }
 
@@ -760,20 +781,24 @@ static CommandList lineClearSystem_pure(const entt::registry& view, const Tetris
 // ゲームオーバー判定（純粋）
 // --- 追記: 生成された ActivePiece が置けない場合にフラグを立てる ---
 // =============================
-static CommandList gameOverCheckSystem_pure(const entt::registry& view,
-                                            const TetrisResources& res) {
+static CommandList gameOverCheckSystem_pure(
+    ReadOnlyView<GridResource, GameOver, ActivePiece, Position, TetriminoMeta> ro,
+    WriteCommands<GameOver> wr, const TetrisResources& res) {
     CommandList out;
 
-    const auto* grid = view.try_get<GridResource>(res.grid_e);
+    const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
 
     // 既に GameOver 済みなら何もしない
-    if (const auto* go = view.try_get<GameOver>(res.grid_e); go && go->value) return out;
+    if (ro.valid(res.grid_e)) {
+        const auto& go = ro.get<GameOver>(res.grid_e);
+        if (go.value) return out;
+    }
 
-    auto v = view.view<const ActivePiece, const Position, const TetriminoMeta>();
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta>();
     for (auto e : v) {
-        const auto& pos = v.get<const Position>(e);
-        const auto& meta = v.get<const TetriminoMeta>(e);
+        const auto& pos = v.template get<Position>(e);
+        const auto& meta = v.template get<TetriminoMeta>(e);
 
         const auto shape = cells_for(meta.type, meta.direction);
 
@@ -790,7 +815,7 @@ static CommandList gameOverCheckSystem_pure(const entt::registry& view,
         if (!can_place(pos.x, pos.y)) {
             // ★ 追加：ゲームオーバーフラグを ON
             const auto gameover = GameOver{true};
-            out.emplace_back(cmd::emplace_or_replace<GameOver>(res.grid_e, gameover));
+            out.emplace_back(wr.emplace_or_replace<GameOver>(res.grid_e, gameover));
             // 以降のループは不要（単一アクティブ前提）。複数あっても一つで判定十分。
             break;
         }
@@ -864,15 +889,20 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
     TetrisResources res{env.input, env, w.grid_singleton};
 
     Schedule<TetrisResources> sch{{
-        Phase<TetrisResources>{{&inputSystem_pure}}, Phase<TetrisResources>{{&gravitySystem_pure}},
-        Phase<TetrisResources>{{&resolveRotationSystem_pure}},
-        Phase<TetrisResources>{{&resolveLateralSystem_pure}},
-        Phase<TetrisResources>{{&hardDropSystem_pure}},
-        Phase<TetrisResources>{{&resolveDropSystem_pure}},
-        Phase<TetrisResources>{{&lockTimerTickSystem_pure}},  // ★ 追加
-        Phase<TetrisResources>{{&lockAndMergeSystem_pure}},
-        Phase<TetrisResources>{{&lineClearSystem_pure}},
-        Phase<TetrisResources>{{&gameOverCheckSystem_pure}},  // ★ 追加：最終チェック
+        Phase<TetrisResources>{{make_system<TetrisResources>(inputSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(gravitySystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(resolveRotationSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(resolveLateralSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(hardDropSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(resolveDropSystem_pure)}},
+        Phase<TetrisResources>{{
+            make_system<TetrisResources>(lockTimerTickSystem_pure)  // ★ 追加
+        }},
+        Phase<TetrisResources>{{make_system<TetrisResources>(lockAndMergeSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(lineClearSystem_pure)}},
+        Phase<TetrisResources>{{
+            make_system<TetrisResources>(gameOverCheckSystem_pure)  // ★ 追加：最終チェック
+        }},
     }};
 
     run_schedule(world, res, sch);
