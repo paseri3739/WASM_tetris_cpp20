@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>  // SDL_Window, SDL_Renderer の型が必要
+#include <SDL2/SDL_ttf.h>
 #include <memory>
 import Game;
 import GlobalSetting;
@@ -22,11 +23,21 @@ int main() {
     Game<Setting, Impl>::SettingFactory factory =
         [=](SDL_Window* window, SDL_Renderer* renderer) -> std::shared_ptr<const Setting> {
         // もともと main に書いていた設定値をここに移す
-        auto s = std::make_shared<Setting>(columns, rows, cell_width, cell_height, fps, drop_rate);
 
-        // ここで SDL 依存のグローバル状態を構築して Setting に組み込める
-        // 例:
-        // s->init_with_sdl(window, renderer);
+        (void)window;
+        (void)renderer;
+
+        // フォントを SDL_ttf からロードし、shared_ptr で管理
+        global_setting::FontPtr font{
+            TTF_OpenFont("assets/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", cell_height),
+            global_setting::TtfFontDeleter{}};
+        if (!font) {
+            SDL_Log("Failed to load font: %s", TTF_GetError());
+            throw std::runtime_error("Failed to load NotoSansJP-Regular.ttf");
+        }
+
+        auto s = std::make_shared<Setting>(columns, rows, cell_width, cell_height, fps, drop_rate,
+                                           std::move(font));
 
         // const 共有ポインタとして返す
         return std::shared_ptr<const Setting>(std::move(s));
