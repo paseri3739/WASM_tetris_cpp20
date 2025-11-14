@@ -36,11 +36,11 @@ inline tl::expected<Scene, std::string> make_initial(
 // 更新
 inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
     // 例：PAUSE で次のシーンへ
-    const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
-    if (env.input.pressed(*pause_key)) {
-        ThirdData next{};
-        return Scene{next};
-    }
+    // const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
+    // if (env.input.pressed(*pause_key)) {
+    //     ThirdData next{};
+    //     return Scene{next};
+    // }
 
     InitialData u = s;
     tetris_rule::step_world(u.world, env);

@@ -22,8 +22,8 @@ struct GlobalSetting {
     const int gridRows;
     const int cellWidth;
     const int cellHeight;
-    const int canvasWidth;
-    const int canvasHeight;
+    const int gridAreaWidth;
+    const int gridAreaHeight;
     const int frameRate;
     const double dropRate;
 
@@ -37,8 +37,8 @@ struct GlobalSetting {
           gridRows(rows),
           cellWidth(cell_w),
           cellHeight(cell_h),
-          canvasWidth(columns * cell_w),
-          canvasHeight(rows * cell_h),
+          gridAreaWidth(columns * cell_w),
+          gridAreaHeight(rows * cell_h),
           frameRate(fps),
           dropRate(drop_rate),
           font(std::move(font_)) {}
