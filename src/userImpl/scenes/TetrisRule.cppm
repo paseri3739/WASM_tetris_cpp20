@@ -35,9 +35,9 @@ using scene_fw::Env;
 // =============================
 
 // テトリミノ関連enum
-enum class PieceType { I, O, T, S, Z, J, L };
-enum class PieceStatus { Falling, Landed, Merged };
-enum class PieceDirection { North, East, South, West };
+export enum class PieceType { I, O, T, S, Z, J, L };
+export enum class PieceStatus { Falling, Landed, Merged };
+export enum class PieceDirection { North, East, South, West };
 
 // 色ユーティリティ
 constexpr SDL_Color to_color(PieceType type) noexcept {
@@ -60,17 +60,17 @@ constexpr SDL_Color to_color(PieceType type) noexcept {
     return SDL_Color{255, 255, 255, 255};
 }
 
-struct Position {
+export struct Position {
     int x{}, y{};
 };
 
-struct TetriminoMeta {
+export struct TetriminoMeta {
     PieceType type{};
     PieceDirection direction{};
     PieceStatus status{};
 };
 
-struct ActivePiece {};  // 操作対象
+export struct ActivePiece {};  // 操作対象
 struct Gravity {
     double rate_cps{};
 };  // cells/sec
@@ -86,11 +86,11 @@ struct MoveIntent {
     int dy{0};
 };
 
-struct RotateIntent {
+export struct RotateIntent {
     int dir{0};  // -1: 左回転, +1: 右回転
 };
 
-struct LockTimer {
+export struct LockTimer {
     double sec{0.0};
 };
 
@@ -118,7 +118,7 @@ static inline PieceType take_next(PieceQueue& pq) {
 struct HardDropRequest {};  // 押下フレームのみ付与
 
 // 盤面占有
-enum class CellStatus : std::uint8_t { Empty, Filled };
+export enum class CellStatus : std::uint8_t { Empty, Filled };
 
 // ★ 追加：ゲームオーバー状態（Grid のシングルトンにぶら下げる）
 struct GameOver {
@@ -126,7 +126,7 @@ struct GameOver {
 };
 
 // グリッド情報＋占有
-struct GridResource {
+export struct GridResource {
     int rows{};
     int cols{};
     int cellW{};

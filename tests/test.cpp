@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <entt/entt.hpp>
 #include <memory>
 
 import TetrisRule;
@@ -20,6 +21,7 @@ using tetris_rule::PieceDirection;
 using tetris_rule::PieceStatus;
 using tetris_rule::PieceType;
 using tetris_rule::Position;
+using tetris_rule::RotateIntent;
 using tetris_rule::TetriminoMeta;
 using tetris_rule::World;
 
