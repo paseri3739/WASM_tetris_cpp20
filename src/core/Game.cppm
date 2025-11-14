@@ -8,6 +8,7 @@ module;
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+
 export module Game;
 import SceneFramework; // 新規
 import Input;
@@ -20,14 +21,16 @@ export template <class Setting, class SceneImpl>
     requires scene_fw::SceneAPI<SceneImpl, Setting>
 class Game final {
    public:
-    explicit Game(std::shared_ptr<const Setting> setting)
+    // SDL 初期化成功後に SDL 依存のグローバル状態を含めて Setting を構築するファクトリ
+    using SettingFactory =
+        std::function<std::shared_ptr<const Setting>(SDL_Window*, SDL_Renderer*)>;
+
+    // Setting をそのまま受け取るのではなく、SDL 初期化成功後に Setting を構築する関数を受け取る
+    explicit Game(SettingFactory make_setting, int canvas_width, int canvas_height)
         : window_(nullptr, SDL_DestroyWindow),
           renderer_(nullptr, SDL_DestroyRenderer),
           input_(nullptr),
-          running_(true),
-          initialized_(false),
-          setting_(std::move(setting))  // 旧: Grid 依存に合わせて初期化
-    {
+          setting_(nullptr) {
         // SDLの初期化
         if (SDL_Init(SDL_INIT_VIDEO) < 0) {
             std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -43,9 +46,9 @@ class Game final {
         }
 
         // ウィンドウの作成
-        SDL_Window* raw_window = SDL_CreateWindow(
-            "SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            setting_->canvasWidth, setting_->canvasHeight, SDL_WINDOW_SHOWN);
+        SDL_Window* raw_window =
+            SDL_CreateWindow("SDL2 Triangle (Emscripten)", SDL_WINDOWPOS_CENTERED,
+                             SDL_WINDOWPOS_CENTERED, canvas_width, canvas_height, SDL_WINDOW_SHOWN);
         if (!raw_window) {
             std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
             running_ = false;
@@ -65,6 +68,15 @@ class Game final {
             return;
         }
         renderer_.reset(raw_renderer);
+
+        // ここで SDL 初期化成功後に Setting を構築する（SDL 依存のグローバル状態もここで作れる）
+        setting_ = make_setting(window_.get(), renderer_.get());
+        if (!setting_) {
+            std::cerr << "Setting could not be created by factory!" << std::endl;
+            running_ = false;
+            initialized_ = false;
+            return;
+        }
 
         // ここで ユーザー実装側の初期シーンを構築 (制御の反転)
         auto initial_scene = SceneImpl::make_initial(setting_);
@@ -232,10 +244,12 @@ struct GameRunner {
 #endif
 
     template <class Setting, class SceneImpl>
-    static int run(std::shared_ptr<const Setting> setting) {
+    static int run(typename Game<Setting, SceneImpl>::SettingFactory make_setting, int canvas_width,
+                   int canvas_height) {
 #ifdef __EMSCRIPTEN__
         using GameT = Game<Setting, SceneImpl>;
-        static GameT game{std::move(setting)};  // Emscriptenではプログラム終了まで生存させる
+        static GameT game{std::move(make_setting), canvas_width,
+                          canvas_height};  // Emscriptenではプログラム終了まで生存させる
 
         if (!game.isInitialized()) {
             return 1;
@@ -245,7 +259,7 @@ struct GameRunner {
         return 0;
 #else
         using GameT = Game<Setting, SceneImpl>;
-        GameT game{std::move(setting)};
+        GameT game{std::move(make_setting), canvas_width, canvas_height};
 
         if (!game.isInitialized()) {
             return 1;
@@ -267,6 +281,8 @@ struct GameRunner {
 // 利用側に公開するAPI
 export template <class Setting, class SceneImpl>
     requires scene_fw::SceneAPI<SceneImpl, Setting>
-int run_game(std::shared_ptr<const Setting> setting) {
-    return GameRunner::run<Setting, SceneImpl>(std::move(setting));
+int run_game(typename Game<Setting, SceneImpl>::SettingFactory make_setting, int canvas_width,
+             int canvas_height) {
+    return GameRunner::run<Setting, SceneImpl>(std::move(make_setting), canvas_width,
+                                               canvas_height);
 }
