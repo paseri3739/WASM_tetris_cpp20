@@ -102,8 +102,12 @@ class Game final {
 
     void tick(double delta_time_seconds) {
         this->processInput();
-        this->update(delta_time_seconds);
-        this->render();
+
+        // --- このフレーム用の Env を 1 度だけ構築し、update / render で共用する ---
+        scene_fw::Env<Setting> env{*input_, *setting_, delta_time_seconds};
+
+        this->update(env);
+        this->render(env);
 
         // --- FPS の集計と出力 ---
         fps_elapsed_seconds_ += delta_time_seconds;
@@ -141,9 +145,9 @@ class Game final {
     using SettingPatch = typename scene_fw::Env<Setting>::SettingPatch;
     std::vector<SettingPatch> pending_setting_patches_;
 
-    void update(double delta_time) {
-        // --- Env 構築（更新予約のキュー関数をセット）---
-        scene_fw::Env<Setting> env{*input_, *setting_, delta_time};
+    // Env を受け取る形に変更
+    void update(scene_fw::Env<Setting>& env) {
+        // --- Env に更新予約のキュー関数をセット ---
         env.queue_setting_update = [this](SettingPatch patch) {
             pending_setting_patches_.push_back(std::move(patch));
         };
@@ -151,7 +155,7 @@ class Game final {
         // ロジックはすべて SceneImpl 側へ委譲（この段階では setting_ はまだ不変）
         scene_ = SceneImpl::step(std::move(scene_), env);
 
-        // --- Game 側で適用タイミングを制御：update → render の間で一括適用 ---
+        // --- Game 側で適用タイミングを制御：update 終了時に一括適用 ---
         if (!pending_setting_patches_.empty()) {
             // 複数予約されている場合は順次適用（関数合成相当）
             for (auto& patch : pending_setting_patches_) {
@@ -162,7 +166,10 @@ class Game final {
         }
     }
 
-    void render() { SceneImpl::draw(scene_, renderer_.get()); }
+    // Env を引数に追加
+    void render(const scene_fw::Env<Setting>& env) {
+        SceneImpl::draw(scene_, renderer_.get(), env);
+    }
 
     void processInput() {
         // ポーリングはGameのみが担当し、他のモジュールは入力状態を受け取るだけにする

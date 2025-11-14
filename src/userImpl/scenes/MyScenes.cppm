@@ -35,8 +35,9 @@ struct Impl {
         return std::visit([&](auto const& ss) -> Scene { return update(ss, env); }, current);
     }
 
-    static void draw(const Scene& current, SDL_Renderer* const r) {
-        std::visit([&](auto const& ss) { render(ss, r); }, current);
+    static void draw(const Scene& current, SDL_Renderer* const r,
+                     const Env<global_setting::GlobalSetting>& env) {
+        std::visit([&](auto const& ss) { render(ss, r, env); }, current);
     }
 };
 

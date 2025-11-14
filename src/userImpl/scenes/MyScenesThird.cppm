@@ -31,7 +31,8 @@ inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>
     return Scene{s};
 }
 
-inline void render(const ThirdData&, SDL_Renderer* const renderer) {
+inline void render(const ThirdData&, SDL_Renderer* const renderer,
+                   const Env<global_setting::GlobalSetting>& env) {
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);

@@ -61,7 +61,7 @@ concept SceneAPI =
         { Impl::step(std::move(s), env) } -> std::same_as<typename Impl::Scene>;
 
         // 描画
-        { Impl::draw(cs, r) } -> std::same_as<void>;
+        { Impl::draw(cs, r, env) } -> std::same_as<void>;
     };
 
 }  // namespace scene_fw
