@@ -20,8 +20,8 @@ int main() {
     constexpr int canvas_height = rows * cell_height;
 
     // SDL 初期化 / window / renderer 生成後に呼ばれる Setting のファクトリ
-    Game<Setting, Impl>::SettingFactory factory =
-        [=](SDL_Window* window, SDL_Renderer* renderer) -> std::shared_ptr<const Setting> {
+    const auto factory = [=](SDL_Window* window,
+                             SDL_Renderer* renderer) -> std::shared_ptr<const Setting> {
         // もともと main に書いていた設定値をここに移す
 
         (void)window;

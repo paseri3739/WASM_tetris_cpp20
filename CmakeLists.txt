@@ -100,16 +100,20 @@ endif ()
 # -sUSE_SDL=2 はリンク時オプションなので target_link_options で指定
 if (EMSCRIPTEN)
     target_link_options(app PRIVATE
-            "-sUSE_SDL=2" # SDL2ポートをリンク
+            "-sUSE_SDL=2"
             "-sUSE_SDL_IMAGE=2"
             "-sUSE_SDL_MIXER=2"
             "-sUSE_SDL_TTF=2"
             "-sALLOW_MEMORY_GROWTH=1"
             "-sASSERTIONS=1"
+
+            # ここから追加: assets ディレクトリを仮想 FS にプリロード
+            "--preload-file=assets"
     )
-    # 出力を .html にする場合
+
     set_target_properties(app PROPERTIES SUFFIX ".html")
 endif ()
+
 
 # ▼ テスト用バイナリ（**GUI 依存を切り離す**)
 include(CTest)
