@@ -248,6 +248,48 @@ static constexpr std::array<Coord, 4> cells_for(PieceType type, PieceDirection d
 }
 
 // =============================
+// ゴースト表示用ヘルパ
+// =============================
+
+// Grid 上に (piecePx, piecePy) のピクセル位置で meta のテトリミノを置けるか？
+// （ActivePiece 自身は Grid に書き込まれていない前提）
+static inline bool can_place_on_grid_pixel(const GridResource& grid, const TetriminoMeta& meta,
+                                           int piecePx, int piecePy) {
+    const auto shape = cells_for(meta.type, meta.direction);
+
+    for (auto [rr, cc] : shape) {
+        // ピクセル → グリッド座標変換
+        const int col = (piecePx - grid.origin_x) / grid.cellW + cc;
+        const int row = (piecePy - grid.origin_y) / grid.cellH + rr;
+
+        // 盤面外なら不可
+        if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) {
+            return false;
+        }
+
+        const int idx = grid.index(row, col);
+        // 既に固定ブロックがあるなら不可
+        if (grid.occ[idx] == CellStatus::Filled) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 現在位置から縦方向に落とせるだけ落とした位置（ゴースト位置）を返す
+static inline Position compute_ghost_position(const GridResource& grid, const Position& currentPos,
+                                              const TetriminoMeta& meta) {
+    Position ghost = currentPos;
+    const int step_py = grid.cellH;  // 1セルぶんのピクセル
+
+    // 次の 1 セル下にまだ置けるあいだ落とし続ける
+    while (can_place_on_grid_pixel(grid, meta, ghost.x, ghost.y + step_py)) {
+        ghost.y += step_py;
+    }
+    return ghost;
+}
+
+// =============================
 // ワールドハンドル（シーンから利用）
 // =============================
 
@@ -294,6 +336,123 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
     }
     idx = (idx + (dir > 0 ? +1 : -1) + 4) % 4;
     return order[idx];
+}
+
+// =============================
+// SRS キックオフセット定義
+// =============================
+
+struct KickOffset {
+    int dx;  // 列方向オフセット（セル単位）
+    int dy;  // 行方向オフセット（セル単位）
+};
+
+constexpr int dir_index(PieceDirection d) noexcept {
+    switch (d) {
+        case PieceDirection::North:
+            return 0;
+        case PieceDirection::East:
+            return 1;
+        case PieceDirection::South:
+            return 2;
+        case PieceDirection::West:
+            return 3;
+    }
+    return 0;
+}
+
+// JLSTZ 用 SRS キックテーブル（回転 0, R, 2, L = North, East, South, West）
+// 参照: Tetris Guideline SRS
+constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
+                                                    PieceDirection to) noexcept {
+    using D = PieceDirection;
+    // 0 -> R
+    if (from == D::North && to == D::East) {
+        return {{{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}};
+    }
+    // R -> 0
+    if (from == D::East && to == D::North) {
+        return {{{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}};
+    }
+    // R -> 2
+    if (from == D::East && to == D::South) {
+        return {{{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}};
+    }
+    // 2 -> R
+    if (from == D::South && to == D::East) {
+        return {{{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}};
+    }
+    // 2 -> L
+    if (from == D::South && to == D::West) {
+        return {{{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}};
+    }
+    // L -> 2
+    if (from == D::West && to == D::South) {
+        return {{{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}};
+    }
+    // L -> 0
+    if (from == D::West && to == D::North) {
+        return {{{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}};
+    }
+    // 0 -> L
+    if (from == D::North && to == D::West) {
+        return {{{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}};
+    }
+
+    // その他（使わないが保険として全部 0）
+    return {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}};
+}
+
+// I ミノ用 SRS キックテーブル
+constexpr std::array<KickOffset, 5> srs_kicks_i(PieceDirection from, PieceDirection to) noexcept {
+    using D = PieceDirection;
+    // 0 -> R
+    if (from == D::North && to == D::East) {
+        return {{{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}};
+    }
+    // R -> 0
+    if (from == D::East && to == D::North) {
+        return {{{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}};
+    }
+    // R -> 2
+    if (from == D::East && to == D::South) {
+        return {{{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}};
+    }
+    // 2 -> R
+    if (from == D::South && to == D::East) {
+        return {{{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}};
+    }
+    // 2 -> L
+    if (from == D::South && to == D::West) {
+        return {{{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}};
+    }
+    // L -> 2
+    if (from == D::West && to == D::South) {
+        return {{{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}};
+    }
+    // L -> 0
+    if (from == D::West && to == D::North) {
+        return {{{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}};
+    }
+    // 0 -> L
+    if (from == D::North && to == D::West) {
+        return {{{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}};
+    }
+
+    return {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}};
+}
+
+constexpr std::array<KickOffset, 5> srs_kicks(PieceType type, PieceDirection from,
+                                              PieceDirection to) noexcept {
+    if (type == PieceType::I) {
+        return srs_kicks_i(from, to);
+    }
+    if (type == PieceType::O) {
+        // O ミノは SRS 上はオフセット 0 のみ（実質見た目変化なし）
+        return {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}};
+    }
+    // J, L, S, T, Z
+    return srs_kicks_jlstz(from, to);
 }
 
 // =============================
@@ -405,11 +564,12 @@ static CommandList gravitySystem_pure(
 
 // =============================
 // 回転解決（純粋）
-// --- 追記: 回転解決（クラシック／壁蹴りなし） ---
+// --- 追記: 回転解決（クラシック／壁蹴りなし） -> SRS 対応に変更 ---
 // =============================
 static CommandList resolveRotationSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, RotateIntent, LockTimer> ro,
-    WriteCommands<RotateIntent, TetriminoMeta, LockTimer> wr, const TetrisResources& res) {
+    WriteCommands<RotateIntent, TetriminoMeta, LockTimer, Position> wr,
+    const TetrisResources& res) {
     CommandList out;
     const auto* grid = ro.valid(res.grid_e) ? &ro.get<GridResource>(res.grid_e) : nullptr;
     if (!grid) return out;
@@ -423,11 +583,12 @@ static CommandList resolveRotationSystem_pure(
 
         if (ri.dir == 0) continue;
 
-        const PieceDirection ndir = (meta.type == PieceType::O)
-                                        ? meta.direction
-                                        : rotate_next(meta.direction, (ri.dir > 0 ? +1 : -1));
+        // SRS 用: 回転後方向
+        const PieceDirection ndir = rotate_next(meta.direction, (ri.dir > 0 ? +1 : -1));
 
+        // O ミノも一応方向だけは変えるが、形状は同一なので見た目は変わらない
         const auto shape = cells_for(meta.type, ndir);
+
         auto can_place = [&](int px, int py) -> bool {
             for (auto [rr, cc] : shape) {
                 const int col = (px - grid->origin_x) / grid->cellW + cc;
@@ -438,18 +599,41 @@ static CommandList resolveRotationSystem_pure(
             return true;
         };
 
-        // 壁蹴りなし: その場で置けるなら回転確定
-        if (can_place(pos.x, pos.y)) {
-            meta.direction = ndir;
+        // ★ ここが SRS 本体：キックテーブルを順に試す
+        const auto kicks = srs_kicks(meta.type, meta.direction, ndir);
 
-            // 回転成功時はロック解除（クラシックな振る舞いの一つ）
-            if (meta.status != PieceStatus::Falling) {
-                meta.status = PieceStatus::Falling;
+        bool rotated = false;
+        int applied_px = pos.x;
+        int applied_py = pos.y;
+
+        for (const auto& k : kicks) {
+            const int test_px = pos.x + k.dx * grid->cellW;
+            const int test_py = pos.y + k.dy * grid->cellH;
+            if (can_place(test_px, test_py)) {
+                rotated = true;
+                applied_px = test_px;
+                applied_py = test_py;
+                break;
             }
-            out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
-            out.emplace_back(wr.remove<LockTimer>(e));
         }
-        // 置けない場合は不採用（何もしない）
+
+        if (!rotated) {
+            // どのキックでも置けない場合は不採用（何もしない）
+            continue;
+        }
+
+        // 回転確定
+        meta.direction = ndir;
+
+        // 回転成功時はロック解除（クラシックな振る舞いの一つ）
+        if (meta.status != PieceStatus::Falling) {
+            meta.status = PieceStatus::Falling;
+        }
+
+        // 位置とメタ情報を反映、LockTimer 解除
+        out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
+        out.emplace_back(wr.emplace_or_replace<Position>(e, applied_px, applied_py));
+        out.emplace_back(wr.remove<LockTimer>(e));
     }
     return out;
 }
@@ -923,6 +1107,9 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
     if (!world.registry) return;
     auto& registry = *world.registry;
 
+    // アルファブレンド有効化（ゴースト半透明描画用）
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
     // 背景
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
@@ -967,12 +1154,30 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
         const int cell_width = grid ? grid->cellW : 30;
         const int cell_height = grid ? grid->cellH : 30;
 
-        // 色設定
+        // 形状セル
+        const auto cells = cells_for(meta.type, meta.direction);
+
+        // ★ 追加：ゴースト描画（落下予定位置のシルエット）
+        if (grid) {
+            const Position ghostPos = compute_ghost_position(*grid, pos, meta);
+
+            // ゴースト用の色（同じ色でアルファのみ薄くする）
+            const SDL_Color baseColor = to_color(meta.type);
+            SDL_SetRenderDrawColor(renderer, baseColor.r, baseColor.g, baseColor.b, 80);
+
+            for (const auto& c : cells) {
+                const int x = ghostPos.x + static_cast<int>(c.second) * cell_width;
+                const int y = ghostPos.y + static_cast<int>(c.first) * cell_height;
+                SDL_Rect rect = {x, y, cell_width, cell_height};
+                SDL_RenderFillRect(renderer, &rect);
+            }
+        }
+
+        // 色設定（本体）
         const SDL_Color color = to_color(meta.type);
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-        // 形状セル
-        const auto cells = cells_for(meta.type, meta.direction);
+        // 形状セル（本体）
         for (const auto& c : cells) {
             const int x = pos.x + static_cast<int>(c.second) * cell_width;
             const int y = pos.y + static_cast<int>(c.first) * cell_height;
