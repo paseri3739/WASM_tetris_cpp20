@@ -827,18 +827,6 @@ static CommandList resolveDropSystem_pure(
             pos.y = ny;
         }
 
-        // if (meta.status != PieceStatus::Falling) {
-        //     // ロックタイマ加算
-        //     LockTimer lt{};
-        //     if (auto* old = view.try_get<LockTimer>(e)) {
-        //         lt = *old;
-        //     }
-        //     lt.sec += res.env.dt;
-        //     out.emplace_back(cmd::emplace_or_replace<LockTimer>(e, lt));
-        // } else {
-        //     out.emplace_back(cmd::remove<LockTimer>(e));
-        // }
-
         out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
         out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
     }
@@ -1073,7 +1061,7 @@ static CommandList gameOverCheckSystem_pure(
 // ワールド生成
 export inline tl::expected<World, std::string> make_world(
     const std::shared_ptr<const GlobalSetting>& gs) {
-    if (!gs) return tl::make_unexpected(std::string{"GlobalSetting is null"});
+    if (!gs) return tl::make_unexpected("GlobalSetting is null");
 
     World world{};
     world.registry = std::make_shared<entt::registry>();
@@ -1138,14 +1126,10 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
         Phase<TetrisResources>{{make_system<TetrisResources>(resolveLateralSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(hardDropSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(resolveDropSystem_pure)}},
-        Phase<TetrisResources>{{
-            make_system<TetrisResources>(lockTimerTickSystem_pure)  // ★ 追加
-        }},
+        Phase<TetrisResources>{{make_system<TetrisResources>(lockTimerTickSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(lockAndMergeSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(lineClearSystem_pure)}},
-        Phase<TetrisResources>{{
-            make_system<TetrisResources>(gameOverCheckSystem_pure)  // ★ 追加：最終チェック
-        }},
+        Phase<TetrisResources>{{make_system<TetrisResources>(gameOverCheckSystem_pure)}},
     }};
 
     run_schedule(world, res, sch);
