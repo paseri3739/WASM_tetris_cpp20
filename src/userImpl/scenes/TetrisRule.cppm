@@ -132,6 +132,11 @@ export struct LockTimer {
  */
 constexpr double kLockDelaySec = 0.3;
 
+/**
+ * @brief テトリミノキュー
+ * @param queue テトリミノ種別のキュー
+ * @param rng 乱数生成器
+ */
 struct PieceQueue {
     std::deque<PieceType> queue;
     std::mt19937 rng{std::random_device{}()};
@@ -151,7 +156,10 @@ static inline PieceType take_next(PieceQueue& pq) {
     return t;
 }
 
-struct HardDropRequest {};  // 押下フレームのみ付与
+/**
+ * @brief  ハードドロップリクエストコンポーネント(押下フレームのみ)
+ */
+struct HardDropRequest {};
 
 // 盤面占有
 export enum class CellStatus : std::uint8_t { Empty, Filled };
