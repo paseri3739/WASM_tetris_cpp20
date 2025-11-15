@@ -60,20 +60,40 @@ constexpr SDL_Color to_color(PieceType type) noexcept {
     return SDL_Color{255, 255, 255, 255};
 }
 
+/**
+ * @brief  位置コンポーネント（ピクセル単位）
+ * @param x ピクセル単位の X 座標
+ * @param y ピクセル単位の Y 座標
+ */
 export struct Position {
     int x{}, y{};
 };
 
+/**
+ * @brief テトリミノのメタ情報
+ * @param type テトリミノ種別
+ * @param direction 向き
+ * @param status 現在の状態
+ * @param rotationCount 現在のY座標で何回回転したか(無限に回転できないようにする)
+ */
 export struct TetriminoMeta {
     PieceType type{};
     PieceDirection direction{};
     PieceStatus status{};
+    int rotationCount{0};
 };
 
-export struct ActivePiece {};  // 操作対象
+/**
+ * @brief 操作対象のテトリミノエンティティ
+ */
+export struct ActivePiece {};
+/**
+ * @brief 重力コンポーネント
+ * @param rate_cps 落下速度（セル／秒）
+ */
 struct Gravity {
     double rate_cps{};
-};  // cells/sec
+};
 struct FallAccCells {
     double cells{};
 };  // cells
@@ -81,19 +101,35 @@ struct SoftDrop {
     bool held{false};
     double multiplier{10.0};
 };
+/**
+ * @brief 移動リクエストコンポーネント
+ * @param dx X方向の移動量（セル単位）
+ * @param dy Y方向の移動量（セル単位）
+ */
 struct MoveIntent {
     int dx{0};
     int dy{0};
 };
 
+/**
+ * @brief 回転リクエストコンポーネント
+ * @param dir 回転方向（-1: 左回転, +1: 右回転）
+ */
 export struct RotateIntent {
     int dir{0};  // -1: 左回転, +1: 右回転
 };
 
+/**
+ * @brief ロックタイマーコンポーネント
+ * @param sec ロックまでの経過時間（秒）
+ */
 export struct LockTimer {
     double sec{0.0};
 };
 
+/**
+ * @brief ロック遅延時間（秒）
+ */
 constexpr double kLockDelaySec = 0.3;
 
 struct PieceQueue {
@@ -289,20 +325,24 @@ static inline Position compute_ghost_position(const GridResource& grid, const Po
     return ghost;
 }
 
-// =============================
-// ワールドハンドル（シーンから利用）
-// =============================
-
+/**
+ * @brief ワールドハンドル（シーンから利用）
+ * @param registry ECS レジストリ
+ * @param grid_singleton グリッドリソースエンティティ
+ * @param active 操作中ピースエンティティ
+ */
 export struct World {
     std::shared_ptr<entt::registry> registry;
     entt::entity grid_singleton{entt::null};
     entt::entity active{entt::null};
 };
 
-// =============================
-// System 共通のリソース束ね（純粋化用）
-// =============================
-
+/**
+ * @brief 共通リソース
+ * @param input 入力
+ * @param env 環境情報
+ * @param grid_e グリッドリソースエンティティ
+ */
 struct TetrisResources {
     const input::Input& input;
     const Env<GlobalSetting>& env;
@@ -455,9 +495,15 @@ constexpr std::array<KickOffset, 5> srs_kicks(PieceType type, PieceDirection fro
     return srs_kicks_jlstz(from, to);
 }
 
-// =============================
-// 入力（純粋）：意図を追加
-// =============================
+/**
+ * @brief
+ * 入力処理システム（純粋）移動／回転／ソフトドロップ／ハードドロップ要求を処理して積み、後続システムで解決
+ *
+ * @param ro 読み取りコンポーネント
+ * @param wr 書き込みコマンド
+ * @param res リソース
+ * @return CommandList コマンドリスト
+ */
 static CommandList inputSystem_pure(
     ReadOnlyView<ActivePiece, SoftDrop, MoveIntent, RotateIntent, HardDropRequest> ro,
     WriteCommands<SoftDrop, MoveIntent, RotateIntent, HardDropRequest> wr,
@@ -525,9 +571,14 @@ static CommandList inputSystem_pure(
     return out;
 }
 
-// =============================
-// 重力（純粋）：FallAccCells と MoveIntent.dy を更新
-// =============================
+/**
+ * @brief 重力（純粋）：FallAccCells と MoveIntent.dy を更新
+ *
+ * @param ro 読み取り
+ * @param wr 書き込み
+ * @param res リソース
+ * @return CommandList コマンドリスト
+ */
 static CommandList gravitySystem_pure(
     ReadOnlyView<ActivePiece, Gravity, FallAccCells, SoftDrop, MoveIntent> ro,
     WriteCommands<FallAccCells, MoveIntent> wr, const TetrisResources& res) {
