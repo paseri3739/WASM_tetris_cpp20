@@ -44,7 +44,7 @@ export struct CommandBuffer {
     }
 };
 
-// よく使うコマンドのヘルパ（テンプレートで汎用化）
+// よく使うコマンドのヘルパ(テンプレートで汎用化)
 export namespace cmd {
 
 // emplace_or_replace<T>(entity, args...)
@@ -63,7 +63,7 @@ Command emplace_or_replace(entt::entity e, Args&&... args) {
     }};
 }
 
-// 値を直接渡すオーバーロードも用意（明示 move 向け）
+// 値を直接渡すオーバーロードも用意(明示 move 向け)
 template <class T>
 Command emplace_or_replace(entt::entity e, T&& value) {
     auto holder = std::make_unique<std::decay_t<T>>(std::forward<T>(value));
@@ -113,7 +113,7 @@ struct ReadOnlyView {
         return reg.get<const T>(e);
     }
 
-    // view を取得（指定できるのは ReadComponents のサブセットだけ）
+    // view を取得(指定できるのは ReadComponents のサブセットだけ)
     template <class... Ts>
     auto view() const {
         static_assert((detail::is_in_v<Ts, ReadComponents...> && ...),
@@ -156,7 +156,7 @@ struct WriteCommands {
 // ------------------------------
 
 // 純粋 System のシグネチャ：const registry + Resources -> CommandList
-// （実体は「ReadOnlyView + WriteCommands + Resources -> CommandList」を包んだもの）
+// (実体は「ReadOnlyView + WriteCommands + Resources -> CommandList」を包んだもの)
 export template <class Resources>
 using PureSystem = std::function<CommandList(const entt::registry& view, const Resources& res)>;
 

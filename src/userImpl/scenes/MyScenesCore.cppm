@@ -13,7 +13,7 @@ import TetrisRule;
 
 export namespace my_scenes {
 
-// シーン純粋データ（World を抱えるだけ）
+// シーン純粋データ(World を抱えるだけ)
 struct InitialData {
     std::shared_ptr<const global_setting::GlobalSetting> setting;
     tetris_rule::World world;

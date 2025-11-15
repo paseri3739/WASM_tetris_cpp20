@@ -43,7 +43,7 @@ inline void render(const ThirdData& s, SDL_Renderer* const renderer,
     if (setting.font) {
         constexpr const char* text = "Game Over";
 
-        // 文字色（ここでは白）
+        // 文字色(ここでは白)
         SDL_Color color{255, 255, 255, 255};
 
         // UTF-8 文字列としてレンダリング

@@ -9,7 +9,7 @@ int main() {
     using Setting = global_setting::GlobalSetting;
     using Impl = my_scenes::Impl;
 
-    // ウィンドウサイズはここで決める（必要なら Setting の内容から計算してもよい）
+    // ウィンドウサイズはここで決める(必要なら Setting の内容から計算してもよい)
     constexpr int columns = 10;
     constexpr int rows = 20;
     constexpr int cell_width = 30;

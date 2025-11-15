@@ -1,5 +1,5 @@
 @startuml
-title 1フレームの流れ（シーケンス図）
+title 1フレームの流れ(シーケンス図)
 
 actor "SDL/OS" as OS
 participant Game
@@ -14,15 +14,15 @@ OS -> Game : SDL_PollEvent / 時刻取得
 == 更新 ==
 Game -> Game : Env{ input, setting, dt } 構築
 Game -> Box : step(env)
-Box -> Box : ADLで update(currentState, env)\n→ NextVariant<State>\n（純粋）
+Box -> Box : ADLで update(currentState, env)\n→ NextVariant<State>\n(純粋)
 Box --> Box : 型が変われば内部state差替え
 Game -> Runner : run_schedule(World, Resources, Schedule)
-Runner -> World : CommandBuffer 適用（一括）\n（ここだけ副作用）
+Runner -> World : CommandBuffer 適用(一括)\n(ここだけ副作用)
 
 == 描画 ==
 Game -> Box : renderIO()
-Box --> Game : IO<Unit>（SDL副作用ラムダ）
-Game -> R : io(R)\n（SDL_* をここで実行）
+Box --> Game : IO<Unit>(SDL副作用ラムダ)
+Game -> R : io(R)\n(SDL_* をここで実行)
 Game -> OS : フレーム終了
 
 @enduml

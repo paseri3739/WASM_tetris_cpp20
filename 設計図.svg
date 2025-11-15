@@ -1,1 +1,705 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="CLASS" height="740px" preserveAspectRatio="none" style="width:4057px;height:740px;background:#FFFFFF;" version="1.1" viewBox="0 0 4057 740" width="4057px" zoomAndPan="magnify"><title>現代的ゲームエンジン設計（構造図） -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM</title><defs/><g><g class="title" data-source-line="1"><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="718.4421" x="1662.7298" y="22.9951">現代的ゲームエンジン設計（構造図） -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM</text></g><!--cluster Framework--><g class="cluster" data-entity="Framework" data-source-line="8" data-uid="ent0002" id="cluster_Framework"><rect fill="none" height="658.78" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="1063" x="2515.8" y="44.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="88.7646" x="3002.9177" y="59.292">Framework</text></g><!--cluster ECS (fecs)--><g class="cluster" data-entity="ECS .fecs." data-source-line="36" data-uid="ent0008" id="cluster_ECS .fecs."><rect fill="none" height="450.94" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="576" x="2920.8" y="87.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="79.8096" x="3168.8952" y="102.292">ECS (fecs)</text></g><!--cluster User (scenes)--><g class="cluster" data-entity="User .scenes." data-source-line="63" data-uid="ent0018" id="cluster_User .scenes."><rect fill="none" height="342.1" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="1763" x="26.8" y="391.9569"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="107.6934" x="854.4533" y="406.952">User (scenes)</text></g><!--cluster initial--><g class="cluster" data-entity="initial" data-source-line="64" data-uid="ent0019" id="cluster_initial"><rect fill="none" height="110.27" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="730" x="50.8" y="434.9569"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="45.3018" x="393.1491" y="449.952">initial</text></g><!--cluster next--><g class="cluster" data-entity="next" data-source-line="76" data-uid="ent0023" id="cluster_next"><rect fill="none" height="110.27" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="722" x="804.8" y="434.9569"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="35.1846" x="1148.2077" y="449.952">next</text></g><!--cluster third--><g class="cluster" data-entity="third" data-source-line="82" data-uid="ent0027" id="cluster_third"><rect fill="none" height="110.27" rx="2.5" ry="2.5" style="stroke:#000000;stroke-width:1.5;" width="724" x="387.8" y="599.7869"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="38.3838" x="730.6081" y="614.782">third</text></g><!--class Game--><g class="entity" data-entity="Game" data-source-line="9" data-uid="ent0003" id="entity_Game"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="47.6787" x="2649.96" y="148.2769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="41.6787" x="2652.96" y="166.272">Game</text></g><!--class SceneBox--><g class="entity" data-entity="SceneBox" data-source-line="17" data-uid="ent0004" id="entity_SceneBox"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="140.6309" x="2531.48" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="91.6641" x="2532.48" y="282.2655">«type-erasure»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69.1387" x="2543.7427" y="298.0907">SceneBox</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="44.9668" x="2630.1441" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="42.9668" x="2631.1441" y="275.2655">Setting</text></g><!--class Env--><g class="entity" data-entity="Env" data-source-line="25" data-uid="ent0005" id="entity_Env"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="96.4277" x="2804.59" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="47.4609" x="2805.59" y="282.2655">«value»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="26.0039" x="2816.3185" y="298.0907">Env</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="44.9668" x="2859.0509" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="42.9668" x="2860.0509" y="275.2655">Setting</text></g><!--class IO--><g class="entity" data-entity="IO" data-source-line="33" data-uid="ent0006" id="entity_IO"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="62.5313" x="2707.53" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="49.2012" x="2708.53" y="282.2655">«effect»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="15.1484" x="2725.5564" y="298.0907">IO</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="9.3301" x="2763.7312" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="7.3301" x="2764.7312" y="275.2655">T</text></g><!--class Unit--><g class="entity" data-entity="Unit" data-source-line="34" data-uid="ent0007" id="entity_Unit"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="49.4609" x="3513.07" y="141.2969"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="47.4609" x="3514.07" y="157.4355">«value»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="28.499" x="3523.551" y="173.2607">Unit</text></g><!--class FontStore--><g class="entity" data-entity="FontStore" data-source-line="51" data-uid="ent0016" id="entity_FontStore"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="74.291" x="2763.65" y="660.7769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="68.291" x="2766.65" y="678.772">FontStore</text></g><!--class GlobalSetting--><g class="entity" data-entity="GlobalSetting" data-source-line="55" data-uid="ent0017" id="entity_GlobalSetting"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="208.4531" x="2696.57" y="495.9469"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="202.4531" x="2699.57" y="513.942">global_setting::GlobalSetting</text></g><!--class World--><g class="entity" data-entity="World" data-source-line="37" data-uid="ent0009" id="entity_World"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="46.9404" x="2959.33" y="495.9469"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40.9404" x="2962.33" y="513.942">World</text></g><!--class WorldView--><g class="entity" data-entity="WorldView" data-source-line="41" data-uid="ent0010" id="entity_WorldView"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="132.8574" x="2936.37" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="32.4668" x="2960.372" y="282.2655">«RO»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="74.4707" x="2939.37" y="298.0907">WorldView</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="50.3867" x="3021.8407" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="48.3867" x="3022.8407" y="275.2655">Reads...</text></g><!--class CmdBuf--><g class="entity" data-entity="CmdBuf" data-source-line="42" data-uid="ent0011" id="entity_CmdBuf"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="174.5752" x="3104.51" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="74.5781" x="3127.5505" y="282.2655">«command»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="114.6592" x="3107.51" y="298.0907">CommandBuffer</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="51.916" x="3230.1692" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="49.916" x="3231.1692" y="275.2655">Writes...</text></g><!--class System--><g class="entity" data-entity="System" data-source-line="43" data-uid="ent0012" id="entity_System"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="122.124" x="2941.74" y="141.2969"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="42.2227" x="2949.7317" y="157.4355">«pure»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="52.2061" x="2944.74" y="173.2607">System</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="61.918" x="3004.9461" y="138.2969"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="59.918" x="3005.9461" y="150.4355">RD,WR,Fn</text></g><!--class Phase--><g class="entity" data-entity="Phase" data-source-line="44" data-uid="ent0013" id="entity_Phase"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="63.2451" x="3100.18" y="148.2769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="41.8018" x="3103.18" y="166.272">Phase</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="13.4434" x="3152.9818" y="145.2769"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="11.4434" x="3153.9818" y="157.4155">...</text></g><!--class Schedule--><g class="entity" data-entity="Schedule" data-source-line="45" data-uid="ent0014" id="entity_Schedule"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="85.7764" x="3199.91" y="148.2769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="64.333" x="3202.91" y="166.272">Schedule</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="13.4434" x="3275.243" y="145.2769"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="11.4434" x="3276.243" y="157.4155">...</text></g><!--class Runner--><g class="entity" data-entity="Runner" data-source-line="46" data-uid="ent0015" id="entity_Runner"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="56.7158" x="3320.44" y="148.2769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="50.7158" x="3323.44" y="166.272">Runner</text></g><g class="entity" data-entity="GMN31" data-source-line="89" data-uid="ent0032" id="entity_GMN31"><path d="M1545.95,481.3969 L1545.95,536.7953 L1773.6425,536.7953 L1773.6425,491.3969 L1763.6425,481.3969 L1545.95,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M1763.6425,481.3969 L1763.6425,491.3969 L1773.6425,491.3969 L1763.6425,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="174.0402" x="1551.95" y="498.4638">各シーンは「構造体Data」と</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="206.6925" x="1551.95" y="513.5966">自由関数 update/renderIO を提供</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="134.38" x="1551.95" y="528.7294">（クラス/継承は不要）</text></g><!--class S0--><g class="entity" data-entity="S0" data-source-line="65" data-uid="ent0020" id="entity_S0"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="87.3613" x="67.12" y="495.9469"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81.3613" x="70.12" y="513.942">initial::Data</text></g><!--class upd0--><g class="entity" data-entity="upd0" data-source-line="72" data-uid="ent0021" id="entity_upd0"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="446.93" y="488.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="576.2186" y="505.0955">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="279.0908" x="449.93" y="520.9207">update(const Data&amp;, Env) : NextVariant</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523" x="737.0208" y="485.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="28.6523" x="738.0208" y="498.0955">Data</text></g><!--class rnd0--><g class="entity" data-entity="rnd0" data-source-line="73" data-uid="ent0022" id="entity_rnd0"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="189.56" y="488.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="273.3281" y="505.0955">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="188.0498" x="192.56" y="520.9207">renderIO(const Data&amp;) : IO</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277" x="388.6098" y="485.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="24.4277" x="389.6098" y="498.0955">Unit</text></g><!--class S1--><g class="entity" data-entity="S1" data-source-line="77" data-uid="ent0024" id="entity_S1"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="80.1221" x="820.74" y="495.9469"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="74.1221" x="823.74" y="513.942">next::Data</text></g><!--class upd1--><g class="entity" data-entity="upd1" data-source-line="78" data-uid="ent0025" id="entity_upd1"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="935.93" y="488.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="1065.2186" y="505.0955">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="279.0908" x="938.93" y="520.9207">update(const Data&amp;, Env) : NextVariant</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523" x="1226.0208" y="485.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="28.6523" x="1227.0208" y="498.0955">Data</text></g><!--class rnd1--><g class="entity" data-entity="rnd1" data-source-line="79" data-uid="ent0026" id="entity_rnd1"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="1288.56" y="488.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="1372.3281" y="505.0955">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="188.0498" x="1291.56" y="520.9207">renderIO(const Data&amp;) : IO</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277" x="1487.6098" y="485.9569"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="24.4277" x="1488.6098" y="498.0955">Unit</text></g><!--class S2--><g class="entity" data-entity="S2" data-source-line="83" data-uid="ent0028" id="entity_S2"><rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="81.7559" x="403.92" y="660.7769"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="75.7559" x="406.92" y="678.772">third::Data</text></g><!--class upd2--><g class="entity" data-entity="upd2" data-source-line="84" data-uid="ent0029" id="entity_upd2"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="777.93" y="653.7869"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="907.2186" y="669.9255">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="279.0908" x="780.93" y="685.7507">update(const Data&amp;, Env) : NextVariant</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523" x="1068.0208" y="650.7869"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="28.6523" x="1069.0208" y="662.9255">Data</text></g><!--class rnd2--><g class="entity" data-entity="rnd2" data-source-line="85" data-uid="ent0030" id="entity_rnd2"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="520.56" y="653.7869"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="26.5137" x="604.3281" y="669.9255">«fn»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="188.0498" x="523.56" y="685.7507">renderIO(const Data&amp;) : IO</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277" x="719.6098" y="650.7869"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="24.4277" x="720.6098" y="662.9255">Unit</text></g><!--class NextDecl--><g class="entity" data-entity="NextDecl" data-source-line="119" data-uid="ent0051" id="entity_NextDecl"><rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="103.9756" x="58.81" y="266.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="45.8145" x="82.2255" y="282.2655">«meta»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="86.6455" x="61.81" y="298.0907">next_scenes</text><rect fill="#FFFFFF" height="15.9688" style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="9.3301" x="156.4555" y="263.1269"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="7.3301" x="157.4555" y="275.2655">T</text></g><g class="entity" data-entity="GMN59" data-source-line="130" data-uid="ent0060" id="entity_GMN59"><path d="M3594.7,258.5569 L3594.7,313.9553 L4050.9017,313.9553 L4050.9017,268.5569 L4040.9017,258.5569 L3594.7,258.5569" fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M4040.9017,258.5569 L4040.9017,268.5569 L4050.9017,268.5569 L4040.9017,258.5569" fill="#FEFFDD" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="113.4771" x="3600.7" y="275.6238">Systemは純関数：</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="435.2017" x="3600.7" y="290.7566">(WorldView&lt;Reads...&gt;, Resources) -&gt; CommandBuffer&lt;Writes...&gt;</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="172.358" x="3600.7" y="305.8894">副作用は Runner が一括適用</text></g><g class="entity" data-entity="GMN62" data-source-line="136" data-uid="ent0063" id="entity_GMN62"><path d="M1950.59,481.3969 L1950.59,536.7953 L2211.0173,536.7953 L2211.0173,491.3969 L2201.0173,481.3969 L1950.59,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M2201.0173,481.3969 L2201.0173,491.3969 L2211.0173,491.3969 L2201.0173,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="239.4273" x="1956.59" y="498.4638">updateの戻り型が NextVariant&lt;T&gt; で</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="143.0002" x="1956.59" y="513.5966">不正遷移は型で不可能。</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="223.1965" x="1956.59" y="528.7294">型が変われば内部 state を差し替え。</text></g><g class="entity" data-entity="GMN65" data-source-line="142" data-uid="ent0066" id="entity_GMN65"><path d="M2245.55,481.3969 L2245.55,536.7953 L2500.0551,536.7953 L2500.0551,491.3969 L2490.0551,481.3969 L2245.55,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M2490.0551,481.3969 L2490.0551,491.3969 L2500.0551,491.3969 L2490.0551,481.3969" fill="#FEFFDD" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="192.8228" x="2251.55" y="498.4638">renderIOは IO&lt;Unit&gt; を返す。</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="233.5051" x="2251.55" y="513.5966">SDL呼び出しはラムダ内に直接記述し、</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="208.9142" x="2251.55" y="528.7294">Game::render() が一箇所で実行。</text></g><!--link S0 to GMN31--><g class="link" data-entity-1="S0" data-entity-2="GMN31" data-source-line="89" data-uid="lnk33" id="link_S0_GMN31"><path d="M112.63,495.5969 C117.8,463.3369 135.83,382.0069 189.3,348.9569 C251.68,310.4069 1441.99,319.8469 1509.3,348.9569 C1571.63,375.9169 1620.04,442.8069 1643.76,481.0569" fill="none" id="S0-GMN31" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/></g><!--reverse link Game to SceneBox--><g class="link" data-entity-1="Game" data-entity-2="SceneBox" data-source-line="96" data-uid="lnk34" id="link_Game_SceneBox"><path codeLine="96" d="M2660.5619,185.0095 C2648.0419,206.3695 2628.16,240.2869 2613.17,265.8669" fill="none" id="Game-backto-SceneBox" style="stroke:#181818;stroke-width:1;"/><polygon fill="none" points="2666.63,174.6569,2660.145,177.8105,2660.5619,185.0095,2667.0468,181.8559,2666.63,174.6569" style="stroke:#181818;stroke-width:1;"/></g><!--link Game to Env--><g class="link" data-entity-1="Game" data-entity-2="Env" data-source-line="97" data-uid="lnk35" id="link_Game_Env"><path codeLine="97" d="M2698.1,165.8169 C2741.35,172.3869 2828.91,188.2869 2847.8,211.5569 C2860,226.5969 2860.4352,243.6025 2858.0052,259.8925" fill="none" id="Game-to-Env" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="2857.12,265.8269,2862.4041,257.5155,2857.8577,260.8816,2854.4916,256.3352,2857.12,265.8269" style="stroke:#181818;stroke-width:1;"/></g><!--link Game to IO--><g class="link" data-entity-1="Game" data-entity-2="IO" data-source-line="98" data-uid="lnk36" id="link_Game_IO"><path codeLine="98" d="M2669.88,175.0469 C2666.33,188.8769 2662.76,211.3869 2670.8,228.5569 C2678.43,244.8469 2688.3408,254.6803 2702.2308,264.2603" fill="none" id="Game-to-IO" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="2707.17,267.6669,2702.0323,259.2643,2703.054,264.8281,2697.4902,265.8498,2707.17,267.6669" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="171.152" x="2671.8" y="224.6238">実行（renderer* を与える）</text></g><!--link Env to GlobalSetting--><g class="link" data-entity-1="Env" data-entity-2="GlobalSetting" data-source-line="99" data-uid="lnk37" id="link_Env_GlobalSetting"><path codeLine="99" d="M2848.19,306.8569 C2837.72,351.2969 2813.8051,452.8766 2805.1451,489.6566" fill="none" id="Env-to-GlobalSetting" style="stroke:#181818;stroke-width:1;"/><polygon fill="#181818" points="2803.77,495.4969,2809.7262,487.6532,2804.9159,490.63,2801.9392,485.8197,2803.77,495.4969" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="26" x="2840.8" y="364.5238">参照</text></g><!--reverse link GlobalSetting to FontStore--><g class="link" data-entity-1="GlobalSetting" data-entity-2="FontStore" data-source-line="100" data-uid="lnk38" id="link_GlobalSetting_FontStore"><path codeLine="100" d="M2800.8,534.5969 C2800.8,564.9869 2800.8,630.3969 2800.8,660.5969" fill="none" id="GlobalSetting-backto-FontStore" style="stroke:#181818;stroke-width:1;"/><polygon fill="none" points="2800.8,522.5969,2796.8,528.5969,2800.8,534.5969,2804.8,528.5969,2800.8,522.5969" style="stroke:#181818;stroke-width:1;"/></g><!--link SceneBox to upd0--><g class="link" data-entity-1="SceneBox" data-entity-2="upd0" data-source-line="103" data-uid="lnk39" id="link_SceneBox_upd0"><path codeLine="103" d="M2531.25,287.7969 C2166.04,290.7369 505.6,306.1669 468.8,343.9569 C420.89,393.1569 508.563,453.9857 563.773,485.5957" fill="none" id="SceneBox-to-upd0" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="568.98,488.5769,563.157,480.6338,564.6409,486.0925,559.1821,487.5764,568.98,488.5769" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="85.6172" x="469.8" y="364.5238">ADL dispatch</text></g><!--link SceneBox to rnd0--><g class="link" data-entity-1="SceneBox" data-entity-2="rnd0" data-source-line="104" data-uid="lnk40" id="link_SceneBox_rnd0"><path codeLine="104" d="M2531.03,287.9669 C2154.94,291.8369 405.93,311.5469 360.8,343.9569 C313.61,377.8469 303.8077,446.8875 301.6777,482.5475" fill="none" id="SceneBox-to-rnd0" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="301.32,488.5369,305.8495,479.7914,301.6181,483.5458,297.8637,479.3144,301.32,488.5369" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="85.6172" x="361.8" y="364.5238">ADL dispatch</text></g><!--link SceneBox to upd1--><g class="link" data-entity-1="SceneBox" data-entity-2="upd1" data-source-line="105" data-uid="lnk41" id="link_SceneBox_upd1"><path codeLine="105" d="M2531.1,287.9669 C2356.08,290.3569 1888.77,300.6369 1501.8,343.9569 C1398.25,355.5469 1367.06,344.0669 1270.8,383.9569 C1208.62,409.7269 1151.3377,456.622 1120.1577,484.572" fill="none" id="SceneBox-to-upd1" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="1115.69,488.5769,1125.0615,485.548,1119.4131,485.2394,1119.7217,479.591,1115.69,488.5769" style="stroke:#181818;stroke-width:1;"/></g><!--link SceneBox to rnd1--><g class="link" data-entity-1="SceneBox" data-entity-2="rnd1" data-source-line="106" data-uid="lnk42" id="link_SceneBox_rnd1"><path codeLine="106" d="M2531.16,288.2669 C2310.85,291.8069 1645.68,305.5869 1556.8,343.9569 C1486.93,374.1269 1436.2979,446.9706 1414.0679,483.5206" fill="none" id="SceneBox-to-rnd1" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="1410.95,488.6469,1419.0443,483.036,1413.5482,484.375,1412.2093,478.8789,1410.95,488.6469" style="stroke:#181818;stroke-width:1;"/></g><!--link SceneBox to upd2--><g class="link" data-entity-1="SceneBox" data-entity-2="upd2" data-source-line="107" data-uid="lnk43" id="link_SceneBox_upd2"><path codeLine="107" d="M2531.01,288.7569 C2378.36,293.3469 2024.61,311.6969 1932.8,383.9569 C1857.62,443.1269 1929.33,526.3869 1852.8,583.7869 C1793.72,628.0969 1348.2435,654.6178 1101.9435,666.0878" fill="none" id="SceneBox-to-upd2" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="1095.95,666.3669,1105.1263,669.9439,1100.9446,666.1343,1104.7542,661.9525,1095.95,666.3669" style="stroke:#181818;stroke-width:1;"/></g><!--link SceneBox to rnd2--><g class="link" data-entity-1="SceneBox" data-entity-2="rnd2" data-source-line="108" data-uid="lnk44" id="link_SceneBox_rnd2"><path codeLine="108" d="M2531.03,289.2369 C2383.41,294.0369 2047.33,308.5869 1938.8,343.9569 C1906.19,354.5869 1895.95,358.6469 1872.8,383.9569 C1816.25,445.7769 1860.06,507.5769 1789.8,553.2269 C1693.86,615.5569 870.12,558.0369 760.8,591.7869 C719.59,604.5169 683.227,630.1561 658.857,649.8461" fill="none" id="SceneBox-to-rnd2" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="654.19,653.6169,663.7044,651.0721,658.0792,650.4746,658.6767,644.8493,654.19,653.6169" style="stroke:#181818;stroke-width:1;"/></g><!--link S0 to World--><g class="link" data-entity-1="S0" data-entity-2="World" data-source-line="111" data-uid="lnk45" id="link_S0_World"><path codeLine="111" d="M113.03,495.6369 C118.13,469.7169 133.31,413.3669 171.8,389.8169 C237.77,349.4569 2895.38,341.5469 2955.8,389.8169 C2987.81,415.3969 2987.4591,464.223 2985.0791,489.653" fill="none" id="S0-to-World" style="stroke:#181818;stroke-width:1;"/><polygon fill="#181818" points="2984.52,495.6269,2989.3412,487.0388,2984.9859,490.6486,2981.3761,486.2933,2984.52,495.6269" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="96.3067" x="1565.8" y="364.5238">world 所有/管理</text></g><!--link WorldView to World--><g class="link" data-entity-1="WorldView" data-entity-2="World" data-source-line="112" data-uid="lnk46" id="link_WorldView_World"><path codeLine="112" d="M3001.03,306.8569 C2997,351.2969 2987.811,452.7413 2984.481,489.5213" fill="none" id="WorldView-to-World" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="2983.94,495.4969,2988.7352,486.8942,2984.3908,490.5172,2980.7678,486.1729,2983.94,495.4969" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="55.4087" x="2998.8" y="364.5238">参照(RO)</text></g><!--link System to WorldView--><g class="link" data-entity-1="System" data-entity-2="WorldView" data-source-line="113" data-uid="lnk47" id="link_System_WorldView"><path codeLine="113" d="M3002.8,181.8869 C3002.8,204.8869 3002.8,236.9269 3002.8,259.8869" fill="none" id="System-to-WorldView" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="3002.8,265.8869,3006.8,256.8869,3002.8,260.8869,2998.8,256.8869,3002.8,265.8869" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="26" x="3003.8" y="224.6238">入力</text></g><!--link System to CmdBuf--><g class="link" data-entity-1="System" data-entity-2="CmdBuf" data-source-line="114" data-uid="lnk48" id="link_System_CmdBuf"><path codeLine="114" d="M3032.75,181.8869 C3068.03,204.8269 3121.2891,239.4373 3156.6491,262.4173" fill="none" id="System-to-CmdBuf" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="3161.68,265.6869,3156.3133,257.4286,3157.4876,262.9623,3151.9539,264.1365,3161.68,265.6869" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="78.0001" x="3104.8" y="224.6238">出力（純粋）</text></g><!--link Runner to CmdBuf--><g class="link" data-entity-1="Runner" data-entity-2="CmdBuf" data-source-line="115" data-uid="lnk49" id="link_Runner_CmdBuf"><path codeLine="115" d="M3332.88,174.8769 C3305.52,196.2869 3254.0958,236.52 3221.4858,262.03" fill="none" id="Runner-to-CmdBuf" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="3216.76,265.7269,3226.3133,263.3321,3220.6982,262.6461,3221.3841,257.031,3216.76,265.7269" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="26" x="3284.8" y="224.6238">適用</text></g><!--link Runner to World--><g class="link" data-entity-1="Runner" data-entity-2="World" data-source-line="116" data-uid="lnk50" id="link_Runner_World"><path codeLine="116" d="M3347.41,174.7669 C3343.72,202.4569 3331.51,270.4869 3296.8,313.9569 C3215.42,415.8769 3070.6331,476.371 3012.3631,497.741" fill="none" id="Runner-to-World" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="3006.73,499.8069,3016.5569,500.4634,3011.4243,498.0853,3013.8024,492.9526,3006.73,499.8069" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="130.0002" x="3326.8" y="290.8238">書き込み（集中管理）</text></g><!--link NextDecl to S0--><!--link NextDecl to S1--><!--link NextDecl to S2--><!--link S0 to S1--><g class="link" data-entity-1="S0" data-entity-2="S1" data-source-line="123" data-uid="lnk55" id="link_S0_S1"><path codeLine="123" d="M112.67,495.8469 C117.24,469.1169 131.68,409.1469 171.8,383.9569 C245.57,337.6369 476.69,382.4969 563.8,382.3169 C662.47,382.1069 700.09,333.4369 785.8,382.3169 C829.34,407.1469 848.6037,462.4749 855.9837,489.7649" fill="none" id="S0-to-S1" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="857.55,495.5569,859.0618,485.8247,856.2447,490.7303,851.3392,487.9132,857.55,495.5569" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="220.9239" x="564.8" y="357.0238">next_scenes&lt;initial::Data&gt; に列挙</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="145.6534" x="602.4353" y="372.1566">(variant&lt;自分|S1|S2&gt;)</text></g><!--link S0 to S2--><g class="link" data-entity-1="S0" data-entity-2="S2" data-source-line="124" data-uid="lnk56" id="link_S0_S2"><path codeLine="124" d="M126.52,522.5469 C138.51,531.7069 155.65,544.0969 171.8,553.2269 C253.8,599.5569 351.5705,638.4143 404.4905,658.2143" fill="none" id="S0-to-S2" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="410.11,660.3169,403.0824,653.4167,405.427,658.5647,400.279,660.9094,410.11,660.3169" style="stroke:#181818;stroke-width:1;"/></g><!--link S2 to S0--><g class="link" data-entity-1="S2" data-entity-2="S0" data-source-line="126" data-uid="lnk58" id="link_S2_S0"><path codeLine="126" d="M422.64,660.3969 C383.68,638.7869 299.89,594.2069 224.8,566.7869 C201.96,558.4569 193.87,563.4269 171.8,553.2269 C154.61,545.2769 141.8385,536.1605 130.0385,526.5305" fill="none" id="S2-to-S0" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="125.39,522.7369,129.8336,531.5263,129.2637,525.8982,134.8918,525.3283,125.39,522.7369" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="172.5864" x="263.8" y="579.8538">next_scenes&lt;third::Data&gt;</text></g><!--link S1 to S2--><g class="link" data-entity-1="S1" data-entity-2="S2" data-source-line="125" data-uid="lnk57" id="link_S1_S2"><path codeLine="125" d="M842.27,522.5669 C826.58,532.5069 803.15,545.9169 780.8,553.2269 C662.24,592.0069 609.53,527.2269 502.8,591.7869 C475.98,608.0069 460.5241,636.3728 452.3441,654.8028" fill="none" id="S1-to-S2" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/><polygon fill="#181818" points="449.91,660.2869,457.2172,653.6834,451.9384,655.7168,449.905,650.438,449.91,660.2869" style="stroke:#181818;stroke-width:1;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="171.0693" x="557.8" y="579.8538">next_scenes&lt;next::Data&gt;</text></g><!--link Runner to GMN59--><g class="link" data-entity-1="Runner" data-entity-2="GMN59" data-source-line="130" data-uid="lnk61" id="link_Runner_GMN59"><path d="M3367.59,174.9669 C3371.81,177.4069 3376.36,179.7669 3380.8,181.5569 C3467.56,216.6869 3568.93,241.5369 3652.7,258.0869" fill="none" id="Runner-GMN59" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/></g><!--link SceneBox to GMN62--><g class="link" data-entity-1="SceneBox" data-entity-2="GMN62" data-source-line="136" data-uid="lnk64" id="link_SceneBox_GMN62"><path d="M2531.24,295.9169 C2453.44,307.5869 2326.25,333.0669 2227.8,383.9569 C2179.29,409.0369 2132.78,452.7169 2105.51,481.0069" fill="none" id="SceneBox-GMN62" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/></g><!--link IO to GMN65--><g class="link" data-entity-1="IO" data-entity-2="GMN65" data-source-line="142" data-uid="lnk67" id="link_IO_GMN65"><path d="M2707.18,305.1869 C2701.46,308.2269 2695.5,311.2769 2689.8,313.9569 C2614.41,349.5169 2586.92,340.4869 2515.8,383.9569 C2470.64,411.5669 2425.72,453.5469 2398.61,480.8969" fill="none" id="IO-GMN65" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;"/></g><!--SRC=[fLVVKnDN57xFNt67XpQfH0YFcKnc58nbnXQ7e3oq7MRPlIGxREwcktUZL9t93_aHGR0jBLMSghMMM2jOwLIgA0_zKpQRX2V_XPvxx-vcDqXVU87atE-S-zrppltk2LMfXb5xxLtppUFslPjszQLTsxTh3-rgmwxjsjKz-DjfFEyqbjxlBxMsbW_B3vtDtVVxTHIFeubpPz2_6oXZ4PcgEf4qDAmRU62qKCI6HDKIHjayrZI6EJUSPV-SdvUTxReptyXaFuj4p5cL52L3Ag2Y9CzAEPobSy36m3ALI4x30O2iIQPvXb93dROe7fLrabM_mMWmabSLZ6JLa07EFnTmOHeRPYJYnaHz6GY0h-Z6R1-w5a4Y53eFDluLeLDKbMUZ2etnR_6u-5SqT1cRvYWfMZJgBbb5HQAu2pKmKR31Lsz4_D1zMHaJV5Q_cifYIbMII_SXoKIU5QLITAw8uv0Zqp9mEktHC2akHZ4fnPAefAkAC8ejHiUYO1qTIrqYAas7U9eKAA4aaiWSWj1GIkT-mww-udNS7P6eb7OTIbIQrXZq6c9RPKW_4j4p1EY7Zt2EbCBimG3HIv9c1HYhB3akUG4MNnJNAF8rvQv5PqZCErHHa-Jk0i5NQMyIuR0JOklHCTWPpyn0My3MFeAbeak9UVeLPzqM1RmPwtEf2fT9tT0KryBBbuDiO49fCWcVLPCQStoDy_2PSA_BAhwI6iUIOfu-VLhmykt0OdpCpRBhCwmN2X9Hpbf0sqXD6Yh5NSVX0bi0BrcWmgxPEQXE8JK-qZyvtfyXRlDm8xWKUSi4yHVpaebJVd3-DHHFpcF5qW8Gpn90ZLk4OCDFpId38bEc2ujUOGTbpMBs8p36t1o5wfNH2SrIkFvUR-GmZHObckz7HGgzQ-Ob0ojJHMga9YOoKmoUxgbuJjEd9SrhYcJoFF_kTY4d7h9u6ytuEuTsyGcbtPx4CvAbKMQ-2BGO6DJ4xzZ0AWL34gd4RM9P8YN9d5GLcX_u5AkvFEMyRmGKvf89kOkQx89xBUUlgT2cggI56z6p9fFiWegY37QpdpF3Pm6vCsduz6aFoujpf8sP5EW6icjhJCPhTRlsBEsxQD8qri89yAmJ-2eiM4Jzsi9yw-p8XIamKijB94kMQj0vW4thkkRtWdyqLoG5PtQyZ_gPUiJ0uNC8T5aoL8dG55ScVd9m60IwCoJSrxxo1IAn89uASb-317rlX5I0gKfFsfafcFF4IOadJa0ySHnncbSDfOSvjmMf3vsK-j09g0_rK2Swl446knj8du5MvZ6TEpVzTyYkxDZb5J50DDz-pmBRvTjsfS6HdSNVs-j_7lxuI-k75qYSPS2ZWkpgTwsrEyrtcnmAOuXTtR5hJ-tgFmFjl- -swWSGkxbtk_DR1SOIm80VvyDkwCS8WZOFglxmmY3ywTTXVl5UP641TMGvwtw1lPF8sNxGURG2_e8FDZvXX9fxgtO5Y2opUEnfZCVJFUe4hclLzlnM96nc-_hIn0ZwOm5BaPUkO49WEtHcv0AiRpdVxjkLNMVnjLsv6_4T6LT-Xv8SfwWcwAwS3mFuHVa_06lc8ow98vYX8vWXTehGm05bXHSu0eh6qZBf2fGGgbQztBfV7sXlFshVMOXqdr0Mp4EAn4N7ns8HzztpLpaM4FDFd5kRmLNtJOMbnTUm10Lh_xNUViaBv3vk8TXXvMbxlH5SydPlRUxPbTkTTv3g0mXpkBdGt7ik-B9WhASghzfRRs0jECxQbMrd-t6dKMQWWDnCYMV16sROTHp1iWONg83vREPRub_00AjWyfKIPrVem_R4CVOXbcvsZ6m2pX3SEFJKfA6DdZbB6wsLkr-IQCdL1MWtPsdXUZPnFJkKZlcH86R2_TGJiwkZwGWiSinW3oQWM6dU8hLLtYBibuJuIU6iFd3gYonVN3-cTKhr0XCGKHMuowB0S3EWcE8slD-_1_Re1sQoVZIEJTqoO6gF8UYxuqOmS7VgEystzw7-4DaRVUpAIdElt5h-m-qCNqPwoVcgWLofWigtbjxOrLlG3X0bfBWJBE5R00M5QZr_B3e7TkNGBJ0wQpkTsbkxN6MqkB_pQzskhjdL5RlombcOFwmra9ZnGGYSLzjsPQErUS3K1toE9Jaw1l4y2MMdz1ISHUaSh8E0Y3tXVG-eoWOJ8T1M-05OAyFcq2pjpRzQgqywZPyw1oyOe5m1BwQHRDWGFt_StBMt5-5sCvdYcXdazny0]--></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+    contentStyleType="text/css" data-diagram-type="CLASS" height="740px" preserveAspectRatio="none"
+    style="width:4057px;height:740px;background:#FFFFFF;" version="1.1" viewBox="0 0 4057 740"
+    width="4057px" zoomAndPan="magnify">
+    <title>現代的ゲームエンジン設計(構造図) -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM</title>
+    <defs />
+    <g>
+        <g class="title" data-source-line="1">
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="718.4421" x="1662.7298" y="22.9951">現代的ゲームエンジン設計(構造図)
+                -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM</text>
+        </g><!--cluster
+        Framework-->
+        <g class="cluster" data-entity="Framework" data-source-line="8" data-uid="ent0002"
+            id="cluster_Framework">
+            <rect fill="none" height="658.78" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="1063" x="2515.8" y="44.2969" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="88.7646" x="3002.9177" y="59.292">Framework</text>
+        </g><!--cluster
+        ECS (fecs)-->
+        <g class="cluster" data-entity="ECS .fecs." data-source-line="36" data-uid="ent0008"
+            id="cluster_ECS .fecs.">
+            <rect fill="none" height="450.94" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="576" x="2920.8" y="87.2969" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="79.8096" x="3168.8952" y="102.292">ECS (fecs)</text>
+        </g><!--cluster
+        User (scenes)-->
+        <g class="cluster" data-entity="User .scenes." data-source-line="63" data-uid="ent0018"
+            id="cluster_User .scenes.">
+            <rect fill="none" height="342.1" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="1763" x="26.8" y="391.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="107.6934" x="854.4533" y="406.952">User (scenes)</text>
+        </g><!--cluster
+        initial-->
+        <g class="cluster" data-entity="initial" data-source-line="64" data-uid="ent0019"
+            id="cluster_initial">
+            <rect fill="none" height="110.27" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="730" x="50.8" y="434.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="45.3018" x="393.1491" y="449.952">initial</text>
+        </g><!--cluster
+        next-->
+        <g class="cluster" data-entity="next" data-source-line="76" data-uid="ent0023"
+            id="cluster_next">
+            <rect fill="none" height="110.27" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="722" x="804.8" y="434.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="35.1846" x="1148.2077" y="449.952">next</text>
+        </g><!--cluster
+        third-->
+        <g class="cluster" data-entity="third" data-source-line="82" data-uid="ent0027"
+            id="cluster_third">
+            <rect fill="none" height="110.27" rx="2.5" ry="2.5"
+                style="stroke:#000000;stroke-width:1.5;" width="724" x="387.8" y="599.7869" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold"
+                lengthAdjust="spacing" textLength="38.3838" x="730.6081" y="614.782">third</text>
+        </g><!--class
+        Game-->
+        <g class="entity" data-entity="Game" data-source-line="9" data-uid="ent0003"
+            id="entity_Game">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="47.6787" x="2649.96" y="148.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="41.6787" x="2652.96" y="166.272">Game</text>
+        </g><!--class
+        SceneBox-->
+        <g class="entity" data-entity="SceneBox" data-source-line="17" data-uid="ent0004"
+            id="entity_SceneBox">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="140.6309" x="2531.48" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="91.6641" x="2532.48" y="282.2655">«type-erasure»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="69.1387" x="2543.7427" y="298.0907">SceneBox</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="44.9668"
+                x="2630.1441" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="42.9668" x="2631.1441" y="275.2655">Setting</text>
+        </g><!--class
+        Env-->
+        <g class="entity" data-entity="Env" data-source-line="25" data-uid="ent0005" id="entity_Env">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="96.4277" x="2804.59" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="47.4609" x="2805.59" y="282.2655">«value»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="26.0039" x="2816.3185" y="298.0907">Env</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="44.9668"
+                x="2859.0509" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="42.9668" x="2860.0509" y="275.2655">Setting</text>
+        </g><!--class
+        IO-->
+        <g class="entity" data-entity="IO" data-source-line="33" data-uid="ent0006" id="entity_IO">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="62.5313" x="2707.53" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="49.2012" x="2708.53" y="282.2655">«effect»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="15.1484" x="2725.5564" y="298.0907">IO</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="9.3301"
+                x="2763.7312" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="7.3301" x="2764.7312" y="275.2655">T</text>
+        </g><!--class
+        Unit-->
+        <g class="entity" data-entity="Unit" data-source-line="34" data-uid="ent0007"
+            id="entity_Unit">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="49.4609" x="3513.07" y="141.2969" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="47.4609" x="3514.07" y="157.4355">«value»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="28.499" x="3523.551" y="173.2607">Unit</text>
+        </g><!--class
+        FontStore-->
+        <g class="entity" data-entity="FontStore" data-source-line="51" data-uid="ent0016"
+            id="entity_FontStore">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="74.291" x="2763.65" y="660.7769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="68.291" x="2766.65" y="678.772">FontStore</text>
+        </g><!--class
+        GlobalSetting-->
+        <g class="entity" data-entity="GlobalSetting" data-source-line="55" data-uid="ent0017"
+            id="entity_GlobalSetting">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="208.4531" x="2696.57" y="495.9469" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="202.4531" x="2699.57" y="513.942">global_setting::GlobalSetting</text>
+        </g><!--class
+        World-->
+        <g class="entity" data-entity="World" data-source-line="37" data-uid="ent0009"
+            id="entity_World">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="46.9404" x="2959.33" y="495.9469" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="40.9404" x="2962.33" y="513.942">World</text>
+        </g><!--class
+        WorldView-->
+        <g class="entity" data-entity="WorldView" data-source-line="41" data-uid="ent0010"
+            id="entity_WorldView">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="132.8574" x="2936.37" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="32.4668" x="2960.372" y="282.2655">«RO»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="74.4707" x="2939.37" y="298.0907">WorldView</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="50.3867"
+                x="3021.8407" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="48.3867" x="3022.8407" y="275.2655">Reads...</text>
+        </g><!--class
+        CmdBuf-->
+        <g class="entity" data-entity="CmdBuf" data-source-line="42" data-uid="ent0011"
+            id="entity_CmdBuf">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="174.5752" x="3104.51" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="74.5781" x="3127.5505" y="282.2655">«command»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="114.6592" x="3107.51" y="298.0907">CommandBuffer</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="51.916"
+                x="3230.1692" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="49.916" x="3231.1692" y="275.2655">Writes...</text>
+        </g><!--class
+        System-->
+        <g class="entity" data-entity="System" data-source-line="43" data-uid="ent0012"
+            id="entity_System">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="122.124" x="2941.74" y="141.2969" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="42.2227" x="2949.7317" y="157.4355">«pure»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="52.2061" x="2944.74" y="173.2607">System</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="61.918"
+                x="3004.9461" y="138.2969" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="59.918" x="3005.9461" y="150.4355">RD,WR,Fn</text>
+        </g><!--class
+        Phase-->
+        <g class="entity" data-entity="Phase" data-source-line="44" data-uid="ent0013"
+            id="entity_Phase">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="63.2451" x="3100.18" y="148.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="41.8018" x="3103.18" y="166.272">Phase</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="13.4434"
+                x="3152.9818" y="145.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="11.4434" x="3153.9818" y="157.4155">...</text>
+        </g><!--class
+        Schedule-->
+        <g class="entity" data-entity="Schedule" data-source-line="45" data-uid="ent0014"
+            id="entity_Schedule">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="85.7764" x="3199.91" y="148.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="64.333" x="3202.91" y="166.272">Schedule</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="13.4434"
+                x="3275.243" y="145.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="11.4434" x="3276.243" y="157.4155">...</text>
+        </g><!--class
+        Runner-->
+        <g class="entity" data-entity="Runner" data-source-line="46" data-uid="ent0015"
+            id="entity_Runner">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="56.7158" x="3320.44" y="148.2769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="50.7158" x="3323.44" y="166.272">Runner</text>
+        </g>
+        <g class="entity" data-entity="GMN31" data-source-line="89" data-uid="ent0032"
+            id="entity_GMN31">
+            <path
+                d="M1545.95,481.3969 L1545.95,536.7953 L1773.6425,536.7953 L1773.6425,491.3969 L1763.6425,481.3969 L1545.95,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;" />
+            <path
+                d="M1763.6425,481.3969 L1763.6425,491.3969 L1773.6425,491.3969 L1763.6425,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="174.0402" x="1551.95" y="498.4638">各シーンは「構造体Data」と</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="206.6925" x="1551.95" y="513.5966">自由関数 update/renderIO を提供</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="134.38" x="1551.95" y="528.7294">(クラス/継承は不要)</text>
+        </g><!--class
+        S0-->
+        <g class="entity" data-entity="S0" data-source-line="65" data-uid="ent0020" id="entity_S0">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="87.3613" x="67.12" y="495.9469" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="81.3613" x="70.12" y="513.942">initial::Data</text>
+        </g><!--class
+        upd0-->
+        <g class="entity" data-entity="upd0" data-source-line="72" data-uid="ent0021"
+            id="entity_upd0">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="446.93" y="488.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="576.2186" y="505.0955">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="279.0908" x="449.93" y="520.9207">update(const Data&amp;, Env) :
+                NextVariant</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523"
+                x="737.0208" y="485.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="28.6523" x="738.0208" y="498.0955">Data</text>
+        </g><!--class
+        rnd0-->
+        <g class="entity" data-entity="rnd0" data-source-line="73" data-uid="ent0022"
+            id="entity_rnd0">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="189.56" y="488.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="273.3281" y="505.0955">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="188.0498" x="192.56" y="520.9207">renderIO(const Data&amp;) : IO</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277"
+                x="388.6098" y="485.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="24.4277" x="389.6098" y="498.0955">Unit</text>
+        </g><!--class
+        S1-->
+        <g class="entity" data-entity="S1" data-source-line="77" data-uid="ent0024" id="entity_S1">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="80.1221" x="820.74" y="495.9469" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="74.1221" x="823.74" y="513.942">next::Data</text>
+        </g><!--class
+        upd1-->
+        <g class="entity" data-entity="upd1" data-source-line="78" data-uid="ent0025"
+            id="entity_upd1">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="935.93" y="488.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="1065.2186" y="505.0955">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="279.0908" x="938.93" y="520.9207">update(const Data&amp;, Env) :
+                NextVariant</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523"
+                x="1226.0208" y="485.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="28.6523" x="1227.0208" y="498.0955">Data</text>
+        </g><!--class
+        rnd1-->
+        <g class="entity" data-entity="rnd1" data-source-line="79" data-uid="ent0026"
+            id="entity_rnd1">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="1288.56" y="488.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="1372.3281" y="505.0955">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="188.0498" x="1291.56" y="520.9207">renderIO(const Data&amp;) : IO</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277"
+                x="1487.6098" y="485.9569" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="24.4277" x="1488.6098" y="498.0955">Unit</text>
+        </g><!--class
+        S2-->
+        <g class="entity" data-entity="S2" data-source-line="83" data-uid="ent0028" id="entity_S2">
+            <rect fill="#F1F1F1" height="26.2969" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="81.7559" x="403.92" y="660.7769" />
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="75.7559" x="406.92" y="678.772">third::Data</text>
+        </g><!--class
+        upd2-->
+        <g class="entity" data-entity="upd2" data-source-line="84" data-uid="ent0029"
+            id="entity_upd2">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="317.7432" x="777.93" y="653.7869" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="907.2186" y="669.9255">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="279.0908" x="780.93" y="685.7507">update(const Data&amp;, Env) :
+                NextVariant</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="30.6523"
+                x="1068.0208" y="650.7869" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="28.6523" x="1069.0208" y="662.9255">Data</text>
+        </g><!--class
+        rnd2-->
+        <g class="entity" data-entity="rnd2" data-source-line="85" data-uid="ent0030"
+            id="entity_rnd2">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="222.4775" x="520.56" y="653.7869" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="26.5137" x="604.3281" y="669.9255">«fn»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="188.0498" x="523.56" y="685.7507">renderIO(const Data&amp;) : IO</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="26.4277"
+                x="719.6098" y="650.7869" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="24.4277" x="720.6098" y="662.9255">Unit</text>
+        </g><!--class
+        NextDecl-->
+        <g class="entity" data-entity="NextDecl" data-source-line="119" data-uid="ent0051"
+            id="entity_NextDecl">
+            <rect fill="#F1F1F1" height="40.2656" rx="2.5" ry="2.5"
+                style="stroke:#181818;stroke-width:0.5;" width="103.9756" x="58.81" y="266.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="45.8145" x="82.2255" y="282.2655">«meta»</text>
+            <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing"
+                textLength="86.6455" x="61.81" y="298.0907">next_scenes</text>
+            <rect fill="#FFFFFF" height="15.9688"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:2,2;" width="9.3301"
+                x="156.4555" y="263.1269" />
+            <text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic"
+                lengthAdjust="spacing" textLength="7.3301" x="157.4555" y="275.2655">T</text>
+        </g>
+        <g class="entity" data-entity="GMN59" data-source-line="130" data-uid="ent0060"
+            id="entity_GMN59">
+            <path
+                d="M3594.7,258.5569 L3594.7,313.9553 L4050.9017,313.9553 L4050.9017,268.5569 L4040.9017,258.5569 L3594.7,258.5569"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;" />
+            <path
+                d="M4040.9017,258.5569 L4040.9017,268.5569 L4050.9017,268.5569 L4040.9017,258.5569"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="113.4771" x="3600.7" y="275.6238">Systemは純関数：</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="435.2017" x="3600.7" y="290.7566">(WorldView&lt;Reads...&gt;, Resources)
+                -&gt; CommandBuffer&lt;Writes...&gt;</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="172.358" x="3600.7" y="305.8894">副作用は Runner が一括適用</text>
+        </g>
+        <g class="entity" data-entity="GMN62" data-source-line="136" data-uid="ent0063"
+            id="entity_GMN62">
+            <path
+                d="M1950.59,481.3969 L1950.59,536.7953 L2211.0173,536.7953 L2211.0173,491.3969 L2201.0173,481.3969 L1950.59,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;" />
+            <path
+                d="M2201.0173,481.3969 L2201.0173,491.3969 L2211.0173,491.3969 L2201.0173,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="239.4273" x="1956.59" y="498.4638">updateの戻り型が NextVariant&lt;T&gt; で</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="143.0002" x="1956.59" y="513.5966">不正遷移は型で不可能。</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="223.1965" x="1956.59" y="528.7294">型が変われば内部 state を差し替え。</text>
+        </g>
+        <g class="entity" data-entity="GMN65" data-source-line="142" data-uid="ent0066"
+            id="entity_GMN65">
+            <path
+                d="M2245.55,481.3969 L2245.55,536.7953 L2500.0551,536.7953 L2500.0551,491.3969 L2490.0551,481.3969 L2245.55,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;" />
+            <path
+                d="M2490.0551,481.3969 L2490.0551,491.3969 L2500.0551,491.3969 L2490.0551,481.3969"
+                fill="#FEFFDD" style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="192.8228" x="2251.55" y="498.4638">renderIOは IO&lt;Unit&gt; を返す。</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="233.5051" x="2251.55" y="513.5966">SDL呼び出しはラムダ内に直接記述し、</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="208.9142" x="2251.55" y="528.7294">Game::render() が一箇所で実行。</text>
+        </g><!--link
+        S0 to GMN31-->
+        <g class="link" data-entity-1="S0" data-entity-2="GMN31" data-source-line="89"
+            data-uid="lnk33" id="link_S0_GMN31">
+            <path
+                d="M112.63,495.5969 C117.8,463.3369 135.83,382.0069 189.3,348.9569 C251.68,310.4069 1441.99,319.8469 1509.3,348.9569 C1571.63,375.9169 1620.04,442.8069 1643.76,481.0569"
+                fill="none" id="S0-GMN31"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+        </g><!--reverse
+        link Game to SceneBox-->
+        <g class="link" data-entity-1="Game" data-entity-2="SceneBox" data-source-line="96"
+            data-uid="lnk34" id="link_Game_SceneBox">
+            <path codeLine="96"
+                d="M2660.5619,185.0095 C2648.0419,206.3695 2628.16,240.2869 2613.17,265.8669"
+                fill="none" id="Game-backto-SceneBox" style="stroke:#181818;stroke-width:1;" />
+            <polygon fill="none"
+                points="2666.63,174.6569,2660.145,177.8105,2660.5619,185.0095,2667.0468,181.8559,2666.63,174.6569"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        Game to Env-->
+        <g class="link" data-entity-1="Game" data-entity-2="Env" data-source-line="97"
+            data-uid="lnk35" id="link_Game_Env">
+            <path codeLine="97"
+                d="M2698.1,165.8169 C2741.35,172.3869 2828.91,188.2869 2847.8,211.5569 C2860,226.5969 2860.4352,243.6025 2858.0052,259.8925"
+                fill="none" id="Game-to-Env"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="2857.12,265.8269,2862.4041,257.5155,2857.8577,260.8816,2854.4916,256.3352,2857.12,265.8269"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        Game to IO-->
+        <g class="link" data-entity-1="Game" data-entity-2="IO" data-source-line="98"
+            data-uid="lnk36" id="link_Game_IO">
+            <path codeLine="98"
+                d="M2669.88,175.0469 C2666.33,188.8769 2662.76,211.3869 2670.8,228.5569 C2678.43,244.8469 2688.3408,254.6803 2702.2308,264.2603"
+                fill="none" id="Game-to-IO"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="2707.17,267.6669,2702.0323,259.2643,2703.054,264.8281,2697.4902,265.8498,2707.17,267.6669"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="171.152" x="2671.8" y="224.6238">実行(renderer* を与える)</text>
+        </g><!--link
+        Env to GlobalSetting-->
+        <g class="link" data-entity-1="Env" data-entity-2="GlobalSetting" data-source-line="99"
+            data-uid="lnk37" id="link_Env_GlobalSetting">
+            <path codeLine="99"
+                d="M2848.19,306.8569 C2837.72,351.2969 2813.8051,452.8766 2805.1451,489.6566"
+                fill="none" id="Env-to-GlobalSetting" style="stroke:#181818;stroke-width:1;" />
+            <polygon fill="#181818"
+                points="2803.77,495.4969,2809.7262,487.6532,2804.9159,490.63,2801.9392,485.8197,2803.77,495.4969"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="26" x="2840.8" y="364.5238">参照</text>
+        </g><!--reverse
+        link GlobalSetting to FontStore-->
+        <g class="link" data-entity-1="GlobalSetting" data-entity-2="FontStore"
+            data-source-line="100" data-uid="lnk38" id="link_GlobalSetting_FontStore">
+            <path codeLine="100"
+                d="M2800.8,534.5969 C2800.8,564.9869 2800.8,630.3969 2800.8,660.5969" fill="none"
+                id="GlobalSetting-backto-FontStore" style="stroke:#181818;stroke-width:1;" />
+            <polygon fill="none"
+                points="2800.8,522.5969,2796.8,528.5969,2800.8,534.5969,2804.8,528.5969,2800.8,522.5969"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        SceneBox to upd0-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="upd0" data-source-line="103"
+            data-uid="lnk39" id="link_SceneBox_upd0">
+            <path codeLine="103"
+                d="M2531.25,287.7969 C2166.04,290.7369 505.6,306.1669 468.8,343.9569 C420.89,393.1569 508.563,453.9857 563.773,485.5957"
+                fill="none" id="SceneBox-to-upd0"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="568.98,488.5769,563.157,480.6338,564.6409,486.0925,559.1821,487.5764,568.98,488.5769"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="85.6172" x="469.8" y="364.5238">ADL dispatch</text>
+        </g><!--link
+        SceneBox to rnd0-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="rnd0" data-source-line="104"
+            data-uid="lnk40" id="link_SceneBox_rnd0">
+            <path codeLine="104"
+                d="M2531.03,287.9669 C2154.94,291.8369 405.93,311.5469 360.8,343.9569 C313.61,377.8469 303.8077,446.8875 301.6777,482.5475"
+                fill="none" id="SceneBox-to-rnd0"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="301.32,488.5369,305.8495,479.7914,301.6181,483.5458,297.8637,479.3144,301.32,488.5369"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="85.6172" x="361.8" y="364.5238">ADL dispatch</text>
+        </g><!--link
+        SceneBox to upd1-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="upd1" data-source-line="105"
+            data-uid="lnk41" id="link_SceneBox_upd1">
+            <path codeLine="105"
+                d="M2531.1,287.9669 C2356.08,290.3569 1888.77,300.6369 1501.8,343.9569 C1398.25,355.5469 1367.06,344.0669 1270.8,383.9569 C1208.62,409.7269 1151.3377,456.622 1120.1577,484.572"
+                fill="none" id="SceneBox-to-upd1"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="1115.69,488.5769,1125.0615,485.548,1119.4131,485.2394,1119.7217,479.591,1115.69,488.5769"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        SceneBox to rnd1-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="rnd1" data-source-line="106"
+            data-uid="lnk42" id="link_SceneBox_rnd1">
+            <path codeLine="106"
+                d="M2531.16,288.2669 C2310.85,291.8069 1645.68,305.5869 1556.8,343.9569 C1486.93,374.1269 1436.2979,446.9706 1414.0679,483.5206"
+                fill="none" id="SceneBox-to-rnd1"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="1410.95,488.6469,1419.0443,483.036,1413.5482,484.375,1412.2093,478.8789,1410.95,488.6469"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        SceneBox to upd2-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="upd2" data-source-line="107"
+            data-uid="lnk43" id="link_SceneBox_upd2">
+            <path codeLine="107"
+                d="M2531.01,288.7569 C2378.36,293.3469 2024.61,311.6969 1932.8,383.9569 C1857.62,443.1269 1929.33,526.3869 1852.8,583.7869 C1793.72,628.0969 1348.2435,654.6178 1101.9435,666.0878"
+                fill="none" id="SceneBox-to-upd2"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="1095.95,666.3669,1105.1263,669.9439,1100.9446,666.1343,1104.7542,661.9525,1095.95,666.3669"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        SceneBox to rnd2-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="rnd2" data-source-line="108"
+            data-uid="lnk44" id="link_SceneBox_rnd2">
+            <path codeLine="108"
+                d="M2531.03,289.2369 C2383.41,294.0369 2047.33,308.5869 1938.8,343.9569 C1906.19,354.5869 1895.95,358.6469 1872.8,383.9569 C1816.25,445.7769 1860.06,507.5769 1789.8,553.2269 C1693.86,615.5569 870.12,558.0369 760.8,591.7869 C719.59,604.5169 683.227,630.1561 658.857,649.8461"
+                fill="none" id="SceneBox-to-rnd2"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="654.19,653.6169,663.7044,651.0721,658.0792,650.4746,658.6767,644.8493,654.19,653.6169"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        S0 to World-->
+        <g class="link" data-entity-1="S0" data-entity-2="World" data-source-line="111"
+            data-uid="lnk45" id="link_S0_World">
+            <path codeLine="111"
+                d="M113.03,495.6369 C118.13,469.7169 133.31,413.3669 171.8,389.8169 C237.77,349.4569 2895.38,341.5469 2955.8,389.8169 C2987.81,415.3969 2987.4591,464.223 2985.0791,489.653"
+                fill="none" id="S0-to-World" style="stroke:#181818;stroke-width:1;" />
+            <polygon fill="#181818"
+                points="2984.52,495.6269,2989.3412,487.0388,2984.9859,490.6486,2981.3761,486.2933,2984.52,495.6269"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="96.3067" x="1565.8" y="364.5238">world 所有/管理</text>
+        </g><!--link
+        WorldView to World-->
+        <g class="link" data-entity-1="WorldView" data-entity-2="World" data-source-line="112"
+            data-uid="lnk46" id="link_WorldView_World">
+            <path codeLine="112"
+                d="M3001.03,306.8569 C2997,351.2969 2987.811,452.7413 2984.481,489.5213" fill="none"
+                id="WorldView-to-World" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="2983.94,495.4969,2988.7352,486.8942,2984.3908,490.5172,2980.7678,486.1729,2983.94,495.4969"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="55.4087" x="2998.8" y="364.5238">参照(RO)</text>
+        </g><!--link
+        System to WorldView-->
+        <g class="link" data-entity-1="System" data-entity-2="WorldView" data-source-line="113"
+            data-uid="lnk47" id="link_System_WorldView">
+            <path codeLine="113"
+                d="M3002.8,181.8869 C3002.8,204.8869 3002.8,236.9269 3002.8,259.8869" fill="none"
+                id="System-to-WorldView" style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="3002.8,265.8869,3006.8,256.8869,3002.8,260.8869,2998.8,256.8869,3002.8,265.8869"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="26" x="3003.8" y="224.6238">入力</text>
+        </g><!--link
+        System to CmdBuf-->
+        <g class="link" data-entity-1="System" data-entity-2="CmdBuf" data-source-line="114"
+            data-uid="lnk48" id="link_System_CmdBuf">
+            <path codeLine="114"
+                d="M3032.75,181.8869 C3068.03,204.8269 3121.2891,239.4373 3156.6491,262.4173"
+                fill="none" id="System-to-CmdBuf"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="3161.68,265.6869,3156.3133,257.4286,3157.4876,262.9623,3151.9539,264.1365,3161.68,265.6869"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="78.0001" x="3104.8" y="224.6238">出力(純粋)</text>
+        </g><!--link
+        Runner to CmdBuf-->
+        <g class="link" data-entity-1="Runner" data-entity-2="CmdBuf" data-source-line="115"
+            data-uid="lnk49" id="link_Runner_CmdBuf">
+            <path codeLine="115"
+                d="M3332.88,174.8769 C3305.52,196.2869 3254.0958,236.52 3221.4858,262.03"
+                fill="none" id="Runner-to-CmdBuf"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="3216.76,265.7269,3226.3133,263.3321,3220.6982,262.6461,3221.3841,257.031,3216.76,265.7269"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="26" x="3284.8" y="224.6238">適用</text>
+        </g><!--link
+        Runner to World-->
+        <g class="link" data-entity-1="Runner" data-entity-2="World" data-source-line="116"
+            data-uid="lnk50" id="link_Runner_World">
+            <path codeLine="116"
+                d="M3347.41,174.7669 C3343.72,202.4569 3331.51,270.4869 3296.8,313.9569 C3215.42,415.8769 3070.6331,476.371 3012.3631,497.741"
+                fill="none" id="Runner-to-World"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="3006.73,499.8069,3016.5569,500.4634,3011.4243,498.0853,3013.8024,492.9526,3006.73,499.8069"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="130.0002" x="3326.8" y="290.8238">書き込み(集中管理)</text>
+        </g><!--link
+        NextDecl to S0--><!--link
+        NextDecl to S1--><!--link
+        NextDecl to S2--><!--link
+        S0 to S1-->
+        <g class="link" data-entity-1="S0" data-entity-2="S1" data-source-line="123"
+            data-uid="lnk55" id="link_S0_S1">
+            <path codeLine="123"
+                d="M112.67,495.8469 C117.24,469.1169 131.68,409.1469 171.8,383.9569 C245.57,337.6369 476.69,382.4969 563.8,382.3169 C662.47,382.1069 700.09,333.4369 785.8,382.3169 C829.34,407.1469 848.6037,462.4749 855.9837,489.7649"
+                fill="none" id="S0-to-S1"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="857.55,495.5569,859.0618,485.8247,856.2447,490.7303,851.3392,487.9132,857.55,495.5569"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="220.9239" x="564.8" y="357.0238">next_scenes&lt;initial::Data&gt; に列挙</text>
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="145.6534" x="602.4353" y="372.1566">(variant&lt;自分|S1|S2&gt;)</text>
+        </g><!--link
+        S0 to S2-->
+        <g class="link" data-entity-1="S0" data-entity-2="S2" data-source-line="124"
+            data-uid="lnk56" id="link_S0_S2">
+            <path codeLine="124"
+                d="M126.52,522.5469 C138.51,531.7069 155.65,544.0969 171.8,553.2269 C253.8,599.5569 351.5705,638.4143 404.4905,658.2143"
+                fill="none" id="S0-to-S2"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="410.11,660.3169,403.0824,653.4167,405.427,658.5647,400.279,660.9094,410.11,660.3169"
+                style="stroke:#181818;stroke-width:1;" />
+        </g><!--link
+        S2 to S0-->
+        <g class="link" data-entity-1="S2" data-entity-2="S0" data-source-line="126"
+            data-uid="lnk58" id="link_S2_S0">
+            <path codeLine="126"
+                d="M422.64,660.3969 C383.68,638.7869 299.89,594.2069 224.8,566.7869 C201.96,558.4569 193.87,563.4269 171.8,553.2269 C154.61,545.2769 141.8385,536.1605 130.0385,526.5305"
+                fill="none" id="S2-to-S0"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="125.39,522.7369,129.8336,531.5263,129.2637,525.8982,134.8918,525.3283,125.39,522.7369"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="172.5864" x="263.8" y="579.8538">next_scenes&lt;third::Data&gt;</text>
+        </g><!--link
+        S1 to S2-->
+        <g class="link" data-entity-1="S1" data-entity-2="S2" data-source-line="125"
+            data-uid="lnk57" id="link_S1_S2">
+            <path codeLine="125"
+                d="M842.27,522.5669 C826.58,532.5069 803.15,545.9169 780.8,553.2269 C662.24,592.0069 609.53,527.2269 502.8,591.7869 C475.98,608.0069 460.5241,636.3728 452.3441,654.8028"
+                fill="none" id="S1-to-S2"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+            <polygon fill="#181818"
+                points="449.91,660.2869,457.2172,653.6834,451.9384,655.7168,449.905,650.438,449.91,660.2869"
+                style="stroke:#181818;stroke-width:1;" />
+            <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing"
+                textLength="171.0693" x="557.8" y="579.8538">next_scenes&lt;next::Data&gt;</text>
+        </g><!--link
+        Runner to GMN59-->
+        <g class="link" data-entity-1="Runner" data-entity-2="GMN59" data-source-line="130"
+            data-uid="lnk61" id="link_Runner_GMN59">
+            <path
+                d="M3367.59,174.9669 C3371.81,177.4069 3376.36,179.7669 3380.8,181.5569 C3467.56,216.6869 3568.93,241.5369 3652.7,258.0869"
+                fill="none" id="Runner-GMN59"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+        </g><!--link
+        SceneBox to GMN62-->
+        <g class="link" data-entity-1="SceneBox" data-entity-2="GMN62" data-source-line="136"
+            data-uid="lnk64" id="link_SceneBox_GMN62">
+            <path
+                d="M2531.24,295.9169 C2453.44,307.5869 2326.25,333.0669 2227.8,383.9569 C2179.29,409.0369 2132.78,452.7169 2105.51,481.0069"
+                fill="none" id="SceneBox-GMN62"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+        </g><!--link
+        IO to GMN65-->
+        <g class="link" data-entity-1="IO" data-entity-2="GMN65" data-source-line="142"
+            data-uid="lnk67" id="link_IO_GMN65">
+            <path
+                d="M2707.18,305.1869 C2701.46,308.2269 2695.5,311.2769 2689.8,313.9569 C2614.41,349.5169 2586.92,340.4869 2515.8,383.9569 C2470.64,411.5669 2425.72,453.5469 2398.61,480.8969"
+                fill="none" id="IO-GMN65"
+                style="stroke:#181818;stroke-width:1;stroke-dasharray:7,7;" />
+        </g><!--SRC=[fLVVKnDN57xFNt67XpQfH0YFcKnc58nbnXQ7e3oq7MRPlIGxREwcktUZL9t93_aHGR0jBLMSghMMM2jOwLIgA0_zKpQRX2V_XPvxx-vcDqXVU87atE-S-zrppltk2LMfXb5xxLtppUFslPjszQLTsxTh3-rgmwxjsjKz-DjfFEyqbjxlBxMsbW_B3vtDtVVxTHIFeubpPz2_6oXZ4PcgEf4qDAmRU62qKCI6HDKIHjayrZI6EJUSPV-SdvUTxReptyXaFuj4p5cL52L3Ag2Y9CzAEPobSy36m3ALI4x30O2iIQPvXb93dROe7fLrabM_mMWmabSLZ6JLa07EFnTmOHeRPYJYnaHz6GY0h-Z6R1-w5a4Y53eFDluLeLDKbMUZ2etnR_6u-5SqT1cRvYWfMZJgBbb5HQAu2pKmKR31Lsz4_D1zMHaJV5Q_cifYIbMII_SXoKIU5QLITAw8uv0Zqp9mEktHC2akHZ4fnPAefAkAC8ejHiUYO1qTIrqYAas7U9eKAA4aaiWSWj1GIkT-mww-udNS7P6eb7OTIbIQrXZq6c9RPKW_4j4p1EY7Zt2EbCBimG3HIv9c1HYhB3akUG4MNnJNAF8rvQv5PqZCErHHa-Jk0i5NQMyIuR0JOklHCTWPpyn0My3MFeAbeak9UVeLPzqM1RmPwtEf2fT9tT0KryBBbuDiO49fCWcVLPCQStoDy_2PSA_BAhwI6iUIOfu-VLhmykt0OdpCpRBhCwmN2X9Hpbf0sqXD6Yh5NSVX0bi0BrcWmgxPEQXE8JK-qZyvtfyXRlDm8xWKUSi4yHVpaebJVd3-DHHFpcF5qW8Gpn90ZLk4OCDFpId38bEc2ujUOGTbpMBs8p36t1o5wfNH2SrIkFvUR-GmZHObckz7HGgzQ-Ob0ojJHMga9YOoKmoUxgbuJjEd9SrhYcJoFF_kTY4d7h9u6ytuEuTsyGcbtPx4CvAbKMQ-2BGO6DJ4xzZ0AWL34gd4RM9P8YN9d5GLcX_u5AkvFEMyRmGKvf89kOkQx89xBUUlgT2cggI56z6p9fFiWegY37QpdpF3Pm6vCsduz6aFoujpf8sP5EW6icjhJCPhTRlsBEsxQD8qri89yAmJ-2eiM4Jzsi9yw-p8XIamKijB94kMQj0vW4thkkRtWdyqLoG5PtQyZ_gPUiJ0uNC8T5aoL8dG55ScVd9m60IwCoJSrxxo1IAn89uASb-317rlX5I0gKfFsfafcFF4IOadJa0ySHnncbSDfOSvjmMf3vsK-j09g0_rK2Swl446knj8du5MvZ6TEpVzTyYkxDZb5J50DDz-pmBRvTjsfS6HdSNVs-j_7lxuI-k75qYSPS2ZWkpgTwsrEyrtcnmAOuXTtR5hJ-tgFmFjl-
+        -swWSGkxbtk_DR1SOIm80VvyDkwCS8WZOFglxmmY3ywTTXVl5UP641TMGvwtw1lPF8sNxGURG2_e8FDZvXX9fxgtO5Y2opUEnfZCVJFUe4hclLzlnM96nc-_hIn0ZwOm5BaPUkO49WEtHcv0AiRpdVxjkLNMVnjLsv6_4T6LT-Xv8SfwWcwAwS3mFuHVa_06lc8ow98vYX8vWXTehGm05bXHSu0eh6qZBf2fGGgbQztBfV7sXlFshVMOXqdr0Mp4EAn4N7ns8HzztpLpaM4FDFd5kRmLNtJOMbnTUm10Lh_xNUViaBv3vk8TXXvMbxlH5SydPlRUxPbTkTTv3g0mXpkBdGt7ik-B9WhASghzfRRs0jECxQbMrd-t6dKMQWWDnCYMV16sROTHp1iWONg83vREPRub_00AjWyfKIPrVem_R4CVOXbcvsZ6m2pX3SEFJKfA6DdZbB6wsLkr-IQCdL1MWtPsdXUZPnFJkKZlcH86R2_TGJiwkZwGWiSinW3oQWM6dU8hLLtYBibuJuIU6iFd3gYonVN3-cTKhr0XCGKHMuowB0S3EWcE8slD-_1_Re1sQoVZIEJTqoO6gF8UYxuqOmS7VgEystzw7-4DaRVUpAIdElt5h-m-qCNqPwoVcgWLofWigtbjxOrLlG3X0bfBWJBE5R00M5QZr_B3e7TkNGBJ0wQpkTsbkxN6MqkB_pQzskhjdL5RlombcOFwmra9ZnGGYSLzjsPQErUS3K1toE9Jaw1l4y2MMdz1ISHUaSh8E0Y3tXVG-eoWOJ8T1M-05OAyFcq2pjpRzQgqywZPyw1oyOe5m1BwQHRDWGFt_StBMt5-5sCvdYcXdazny0]-->
+    </g>
+</svg>

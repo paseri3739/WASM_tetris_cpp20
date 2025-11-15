@@ -34,7 +34,7 @@ inline std::optional<GameKey> to_game_key(SDL_Keycode code) {
     return std::nullopt;
 }
 
-// 逆方向: GameKey → SDL_Keycode（優先される最初のキーを返す）
+// 逆方向: GameKey → SDL_Keycode(優先される最初のキーを返す)
 inline std::optional<SDL_Keycode> to_sdl_key(GameKey game_key) {
     for (const auto& [sdl, key] : KEY_MAP) {
         if (key == game_key) return sdl;
@@ -42,11 +42,11 @@ inline std::optional<SDL_Keycode> to_sdl_key(GameKey game_key) {
     return std::nullopt;
 }
 
-// 逆変換用マップを初期化しておく（複数キー対応が必要なら vector 化）
+// 逆変換用マップを初期化しておく(複数キー対応が必要なら vector 化)
 inline const std::unordered_map<GameKey, SDL_Keycode> PRIMARY_SDL_KEY_FOR_GAMEKEY = [] {
     std::unordered_map<GameKey, SDL_Keycode> map;
     for (const auto& [sdl, key] : KEY_MAP) {
-        // まだ登録されていないGameKeyのみ格納（最初のものを代表とする）
+        // まだ登録されていないGameKeyのみ格納(最初のものを代表とする)
         if (!map.contains(key)) {
             map[key] = sdl;
         }

@@ -1,5 +1,5 @@
 @startuml
-title 現代的ゲームエンジン設計（構造図） -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM
+title 現代的ゲームエンジン設計(構造図) -- TEA × Functional Core/Imperative Shell × ECS × 型安全FSM
 
 skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
@@ -89,14 +89,14 @@ package "User (scenes)" {
   note right of S0
     各シーンは「構造体Data」と
     自由関数 update/renderIO を提供
-    （クラス/継承は不要）
+    (クラス/継承は不要)
   end note
 }
 
-' 関係（構造）
+' 関係(構造)
 Game o-- SceneBox
 Game ..> Env
-Game ..> IO : 実行（renderer* を与える）
+Game ..> IO : 実行(renderer* を与える)
 Env --> GlobalSetting : 参照
 GlobalSetting o-- FontStore
 
@@ -112,11 +112,11 @@ SceneBox ..> rnd2
 S0 --> World : world 所有/管理
 WorldView ..> World : 参照(RO)
 System ..> WorldView : 入力
-System ..> CmdBuf : 出力（純粋）
+System ..> CmdBuf : 出力(純粋)
 Runner ..> CmdBuf : 適用
-Runner ..> World : 書き込み（集中管理）
+Runner ..> World : 書き込み(集中管理)
 
-' 遷移（型安全FSMの宣言）
+' 遷移(型安全FSMの宣言)
 class "next_scenes<T>" as NextDecl <<meta>>
 NextDecl -[hidden]d- S0
 NextDecl -[hidden]d- S1
@@ -126,7 +126,7 @@ S0 ..> S2
 S1 ..> S2 : next_scenes<next::Data>
 S2 ..> S0 : next_scenes<third::Data>
 
-' ノート（設計原則）
+' ノート(設計原則)
 note bottom of Runner
   Systemは純関数：
   (WorldView<Reads...>, Resources) -> CommandBuffer<Writes...>

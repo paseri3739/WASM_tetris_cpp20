@@ -84,13 +84,13 @@ TEST(TetrisRuleSystems, LineClearRemovesFullBottomRow) {
     input::Input input{};
     auto env = makeEnv(*gs, input, 0.0);  // dt=0 なのでロックタイマも進まない
 
-    // 1ステップ実行（LineClearSystem を含む全 System が走る）
+    // 1ステップ実行(LineClearSystem を含む全 System が走る)
     tetris_rule::step_world(w, env);
 
     // Grid を再取得
     const auto& gridAfter = reg.get<GridResource>(w.grid_singleton);
 
-    // どのセルも Filled ではないこと（行が落ちきって全消去）
+    // どのセルも Filled ではないこと(行が落ちきって全消去)
     for (int r = 0; r < gridAfter.rows; ++r) {
         for (int c = 0; c < gridAfter.cols; ++c) {
             const int idx = gridAfter.index(r, c);
@@ -122,7 +122,7 @@ TEST(TetrisRuleSystems, GameOverWhenSpawnOverlapsFilledColumns) {
 
     // スポーン位置は make_world 内で
     //   spawn_col = 3; spawn_row = 3;
-    // としているので、その 4 列分（3,4,5,6 列）を全行 Filled にする。
+    // としているので、その 4 列分(3,4,5,6 列)を全行 Filled にする。
     // → 各行は 10 列中 4 列だけ埋まっているので「ライン消去の対象にはならない」が、
     //    ActivePiece の 4x4 形状は必ずこの 4 列のいずれかを使うので配置不能になる。
     for (int r = 0; r < grid.rows; ++r) {
@@ -146,7 +146,7 @@ TEST(TetrisRuleSystems, GameOverWhenSpawnOverlapsFilledColumns) {
 // ------------------------------------------------------------
 // 3. LockAndMergeSystem + LineClearSystem の一部:
 //    Landed + 十分な LockTimer を持つ ActivePiece が Grid に書き込まれ、
-//    新しい ActivePiece がスポーンすること（ライン消去と競合しないケース）
+//    新しい ActivePiece がスポーンすること(ライン消去と競合しないケース)
 // ------------------------------------------------------------
 TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     constexpr int columns = 10;
@@ -154,7 +154,7 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     constexpr int cellW = 16;
     constexpr int cellH = 16;
     constexpr int fps = 60;
-    constexpr double dropRate = 0.0;  // 重力無効化（位置が変わらないようにする）
+    constexpr double dropRate = 0.0;  // 重力無効化(位置が変わらないようにする)
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
     auto worldExp = tetris_rule::make_world(gs);
@@ -169,13 +169,13 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     ASSERT_EQ(activeView.size_hint(), 1u) << "make_world 直後に ActivePiece は 1 つである想定です";
     const entt::entity e = *activeView.begin();
 
-    // 位置を盤面左上近く（0,0セル）に固定
+    // 位置を盤面左上近く(0,0セル)に固定
     Position pos{};
     pos.x = grid.origin_x + 0 * grid.cellW;
     pos.y = grid.origin_y + 0 * grid.cellH;
     reg.replace<Position>(e, pos);
 
-    // Meta を「着地済み」の状態にしておく（O ミノ、North で十分）
+    // Meta を「着地済み」の状態にしておく(O ミノ、North で十分)
     TetriminoMeta meta{};
     meta.type = PieceType::O;
     meta.direction = PieceDirection::North;
@@ -187,7 +187,7 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     lt.sec = 1.0;  // kLockDelaySec=0.3 より大きければ良い
     reg.emplace_or_replace<LockTimer>(e, lt);
 
-    // 全セル Empty にクリアしておく（念のため）
+    // 全セル Empty にクリアしておく(念のため)
     for (auto& cell : grid.occ) {
         cell = CellStatus::Empty;
     }
@@ -199,14 +199,14 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     // 1ステップ実行
     tetris_rule::step_world(w, env);
 
-    // 1) Grid に固定ブロックが書き込まれているはず（少なくとも 4 セル以上）
+    // 1) Grid に固定ブロックが書き込まれているはず(少なくとも 4 セル以上)
     const auto& gridAfter = reg.get<GridResource>(w.grid_singleton);
     const auto filledCount =
         std::count(gridAfter.occ.begin(), gridAfter.occ.end(), CellStatus::Filled);
     EXPECT_GE(filledCount, 4) << "固定されたテトリミノが Grid に反映されていません";
 
     // 2) ActivePiece は create_then により新規スポーンされているはず
-    //    （古い ActivePiece は destroy 済み）
+    //    (古い ActivePiece は destroy 済み)
     auto afterView = reg.view<ActivePiece, Position, TetriminoMeta>();
     EXPECT_EQ(afterView.size_hint(), 1u)
         << "ロック後に新しい ActivePiece がちょうど 1 つ存在する想定です";
@@ -286,7 +286,7 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
         t = PieceType::I;
     }
 
-    // ActivePiece（1個）の取得
+    // ActivePiece(1個)の取得
     auto view = reg.view<ActivePiece, Position, TetriminoMeta>();
     ASSERT_EQ(view.size_hint(), 1u) << "make_world 直後に ActivePiece は 1 つである想定です";
     const entt::entity e = *view.begin();
@@ -298,7 +298,7 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     meta.status = PieceStatus::Falling;
     reg.replace<TetriminoMeta>(e, meta);
 
-    // 基準位置（4x4 ブロックの左上セル座標）を決める
+    // 基準位置(4x4 ブロックの左上セル座標)を決める
     // rows, cols とも十分な余白がある (3,4) を採用。
     const int base_row = 3;
     const int base_col = 4;
@@ -308,10 +308,10 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     pos.y = grid.origin_y + base_row * grid.cellH;
     reg.replace<Position>(e, pos);
 
-    // その場（North 向き）では衝突しないように盤面を構成しつつ、
+    // その場(North 向き)では衝突しないように盤面を構成しつつ、
     // North -> East の回転時 (0,0) では衝突、(-1,0) のキックでのみ成立する状況を作る。
     //
-    // T ミノ North のセル（rr,cc）は:
+    // T ミノ North のセル(rr,cc)は:
     //   (0,1), (1,0), (1,1), (1,2)
     // なので、ベースから見て使用行は base_row, base_row+1 のみ。
     //
@@ -335,7 +335,7 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     // 事前位置を保存
     const auto posBefore = reg.get<Position>(e);
 
-    // 回転意図を直接付与（右回転 dir=+1）
+    // 回転意図を直接付与(右回転 dir=+1)
     RotateIntent ri{};
     ri.dir = +1;
     reg.emplace_or_replace<RotateIntent>(e, ri);
@@ -344,7 +344,7 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     input::Input input{};
     auto env = makeEnv(*gs, input, 0.0);
 
-    // 1ステップ実行（SRS 対応 resolveRotationSystem_pure が走る）
+    // 1ステップ実行(SRS 対応 resolveRotationSystem_pure が走る)
     tetris_rule::step_world(w, env);
 
     // 回転後の情報を取得

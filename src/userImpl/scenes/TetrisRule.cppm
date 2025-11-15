@@ -61,7 +61,7 @@ constexpr SDL_Color to_color(PieceType type) noexcept {
 }
 
 /**
- * @brief  位置コンポーネント（ピクセル単位）
+ * @brief  位置コンポーネント(ピクセル単位)
  * @param x ピクセル単位の X 座標
  * @param y ピクセル単位の Y 座標
  */
@@ -89,7 +89,7 @@ export struct TetriminoMeta {
 export struct ActivePiece {};
 /**
  * @brief 重力コンポーネント
- * @param rate_cps 落下速度（セル／秒）
+ * @param rate_cps 落下速度(セル／秒)
  */
 struct Gravity {
     double rate_cps{};
@@ -103,8 +103,8 @@ struct SoftDrop {
 };
 /**
  * @brief 移動リクエストコンポーネント
- * @param dx X方向の移動量（セル単位）
- * @param dy Y方向の移動量（セル単位）
+ * @param dx X方向の移動量(セル単位)
+ * @param dy Y方向の移動量(セル単位)
  */
 struct MoveIntent {
     int dx{0};
@@ -113,7 +113,7 @@ struct MoveIntent {
 
 /**
  * @brief 回転リクエストコンポーネント
- * @param dir 回転方向（-1: 左回転, +1: 右回転）
+ * @param dir 回転方向(-1: 左回転, +1: 右回転)
  */
 export struct RotateIntent {
     int dir{0};  // -1: 左回転, +1: 右回転
@@ -121,14 +121,14 @@ export struct RotateIntent {
 
 /**
  * @brief ロックタイマーコンポーネント
- * @param sec ロックまでの経過時間（秒）
+ * @param sec ロックまでの経過時間(秒)
  */
 export struct LockTimer {
     double sec{0.0};
 };
 
 /**
- * @brief ロック遅延時間（秒）
+ * @brief ロック遅延時間(秒)
  */
 constexpr double kLockDelaySec = 0.3;
 
@@ -164,7 +164,7 @@ struct HardDropRequest {};
 // 盤面占有
 export enum class CellStatus : std::uint8_t { Empty, Filled };
 
-// ★ 追加：ゲームオーバー状態（Grid のシングルトンにぶら下げる）
+// ★ 追加：ゲームオーバー状態(Grid のシングルトンにぶら下げる)
 struct GameOver {
     bool value{false};
 };
@@ -177,7 +177,7 @@ export struct GridResource {
     int cellH{};
     int origin_x{0};
     int origin_y{0};
-    // ★ 追加：占有セルのテトリミノ種別（描画色復元用）
+    // ★ 追加：占有セルのテトリミノ種別(描画色復元用)
     // occ[index] == Filled のときのみ参照する
     std::vector<PieceType> occ_type;  // row-major, same size as occ
     std::vector<CellStatus> occ;      // row-major
@@ -191,7 +191,7 @@ export struct GridResource {
 };
 
 // =============================
-// 形状ヘルパ（ローカル定義）
+// 形状ヘルパ(ローカル定義)
 // =============================
 
 using Coord = std::pair<std::int8_t, std::int8_t>;
@@ -296,7 +296,7 @@ static constexpr std::array<Coord, 4> cells_for(PieceType type, PieceDirection d
 // =============================
 
 // Grid 上に (piecePx, piecePy) のピクセル位置で meta のテトリミノを置けるか？
-// （ActivePiece 自身は Grid に書き込まれていない前提）
+// (ActivePiece 自身は Grid に書き込まれていない前提)
 static inline bool can_place_on_grid_pixel(const GridResource& grid, const TetriminoMeta& meta,
                                            int piecePx, int piecePy) {
     const auto shape = cells_for(meta.type, meta.direction);
@@ -320,7 +320,7 @@ static inline bool can_place_on_grid_pixel(const GridResource& grid, const Tetri
     return true;
 }
 
-// 現在位置から縦方向に落とせるだけ落とした位置（ゴースト位置）を返す
+// 現在位置から縦方向に落とせるだけ落とした位置(ゴースト位置)を返す
 static inline Position compute_ghost_position(const GridResource& grid, const Position& currentPos,
                                               const TetriminoMeta& meta) {
     Position ghost = currentPos;
@@ -334,7 +334,7 @@ static inline Position compute_ghost_position(const GridResource& grid, const Po
 }
 
 /**
- * @brief ワールドハンドル（シーンから利用）
+ * @brief ワールドハンドル(シーンから利用)
  * @param registry ECS レジストリ
  * @param grid_singleton グリッドリソースエンティティ
  * @param active 操作中ピースエンティティ
@@ -358,7 +358,7 @@ struct TetrisResources {
 };
 
 // =============================
-// Systems（純粋版）
+// Systems(純粋版)
 // =============================
 
 // --- 追記: 方向遷移のヘルパ ---
@@ -391,8 +391,8 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
 // =============================
 
 struct KickOffset {
-    int dx;  // 列方向オフセット（セル単位）
-    int dy;  // 行方向オフセット（セル単位）
+    int dx;  // 列方向オフセット(セル単位)
+    int dy;  // 行方向オフセット(セル単位)
 };
 
 constexpr int dir_index(PieceDirection d) noexcept {
@@ -409,7 +409,7 @@ constexpr int dir_index(PieceDirection d) noexcept {
     return 0;
 }
 
-// JLSTZ 用 SRS キックテーブル（回転 0, R, 2, L = North, East, South, West）
+// JLSTZ 用 SRS キックテーブル(回転 0, R, 2, L = North, East, South, West)
 // 参照: Tetris Guideline SRS
 constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
                                                     PieceDirection to) noexcept {
@@ -447,7 +447,7 @@ constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
         return {{{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}};
     }
 
-    // その他（使わないが保険として全部 0）
+    // その他(使わないが保険として全部 0)
     return {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}};
 }
 
@@ -496,7 +496,7 @@ constexpr std::array<KickOffset, 5> srs_kicks(PieceType type, PieceDirection fro
         return srs_kicks_i(from, to);
     }
     if (type == PieceType::O) {
-        // O ミノは SRS 上はオフセット 0 のみ（実質見た目変化なし）
+        // O ミノは SRS 上はオフセット 0 のみ(実質見た目変化なし)
         return {{{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}};
     }
     // J, L, S, T, Z
@@ -505,7 +505,7 @@ constexpr std::array<KickOffset, 5> srs_kicks(PieceType type, PieceDirection fro
 
 /**
  * @brief
- * 入力処理システム（純粋）移動／回転／ソフトドロップ／ハードドロップ要求を処理して積み、後続システムで解決
+ * 入力処理システム(純粋)移動／回転／ソフトドロップ／ハードドロップ要求を処理して積み、後続システムで解決
  *
  * @param ro 読み取りコンポーネント
  * @param wr 書き込みコマンド
@@ -524,7 +524,7 @@ static CommandList inputSystem_pure(
     auto rotView = ro.view<RotateIntent>();
 
     for (auto e : v) {
-        // SoftDrop held 更新（読み取り専用ビュー → “置換コマンド”）
+        // SoftDrop held 更新(読み取り専用ビュー → “置換コマンド”)
         {
             const auto& sd = v.template get<SoftDrop>(e);
             SoftDrop next = sd;
@@ -532,7 +532,7 @@ static CommandList inputSystem_pure(
             out.emplace_back(wr.emplace_or_replace<SoftDrop>(e, next));
         }
 
-        // 左右／回転は MoveIntent / RotateIntent を押下瞬間のみ積む（元コメント維持）
+        // 左右／回転は MoveIntent / RotateIntent を押下瞬間のみ積む(元コメント維持)
         // --- 修正: 左右は「押下瞬間のみ」1セル分の MoveIntent を積む ---
         int dx = 0;
         if (const auto left = game_key::to_sdl_key(game_key::GameKey::LEFT);
@@ -569,7 +569,7 @@ static CommandList inputSystem_pure(
         }
         // --- 追記ここまで ---
 
-        // --- ここから追記: ハードドロップ要求（押下瞬間のみ） ---
+        // --- ここから追記: ハードドロップ要求(押下瞬間のみ) ---
         if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
             drop && res.input.pressed(*drop)) {
             out.emplace_back(wr.emplace_or_replace<HardDropRequest>(e));
@@ -580,7 +580,7 @@ static CommandList inputSystem_pure(
 }
 
 /**
- * @brief 重力（純粋）：FallAccCells と MoveIntent.dy を更新
+ * @brief 重力(純粋)：FallAccCells と MoveIntent.dy を更新
  *
  * @param ro 読み取り
  * @param wr 書き込み
@@ -622,8 +622,8 @@ static CommandList gravitySystem_pure(
 }
 
 // =============================
-// 回転解決（純粋）
-// --- 追記: 回転解決（クラシック／壁蹴りなし） -> SRS 対応に変更 ---
+// 回転解決(純粋)
+// --- 追記: 回転解決(クラシック／壁蹴りなし) -> SRS 対応に変更 ---
 // =============================
 static CommandList resolveRotationSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, RotateIntent, LockTimer> ro,
@@ -677,14 +677,14 @@ static CommandList resolveRotationSystem_pure(
         }
 
         if (!rotated) {
-            // どのキックでも置けない場合は不採用（何もしない）
+            // どのキックでも置けない場合は不採用(何もしない)
             continue;
         }
 
         // 回転確定
         meta.direction = ndir;
 
-        // 回転成功時はロック解除（クラシックな振る舞いの一つ）
+        // 回転成功時はロック解除(クラシックな振る舞いの一つ)
         if (meta.status != PieceStatus::Falling) {
             meta.status = PieceStatus::Falling;
         }
@@ -698,7 +698,7 @@ static CommandList resolveRotationSystem_pure(
 }
 
 // =============================
-// 横移動解決（純粋）
+// 横移動解決(純粋)
 // --- ここから追記: 横 → 縦 の順で解決 ---
 // =============================
 static CommandList resolveLateralSystem_pure(
@@ -715,7 +715,7 @@ static CommandList resolveLateralSystem_pure(
         const auto& mi = v.template get<MoveIntent>(e);
 
         int steps = mi.dx;
-        // 水平方向ぶんはここで消費（垂直は resolveDrop へ委譲）
+        // 水平方向ぶんはここで消費(垂直は resolveDrop へ委譲)
         if (mi.dx != 0) {
             MoveIntent next = mi;
             next.dx = 0;
@@ -740,20 +740,20 @@ static CommandList resolveLateralSystem_pure(
         for (int i = 0; i < std::abs(steps); ++i) {
             const int nx = pos.x + dir * step_px;
             if (!can_place(nx, pos.y)) {
-                // 壁/ブロックに当たる場合はそれ以上進めない（残りは破棄）
+                // 壁/ブロックに当たる場合はそれ以上進めない(残りは破棄)
                 break;
             }
             pos.x = nx;
         }
         out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
 
-        // 横移動ではロック状態は変更しない（縦落下系に委譲）
+        // 横移動ではロック状態は変更しない(縦落下系に委譲)
     }
     return out;
 }
 
 // =============================
-// ロックタイマ加算（純粋）：着地中は毎フレーム dt を加算
+// ロックタイマ加算(純粋)：着地中は毎フレーム dt を加算
 // =============================
 static CommandList lockTimerTickSystem_pure(ReadOnlyView<ActivePiece, TetriminoMeta, LockTimer> ro,
                                             WriteCommands<LockTimer> wr,
@@ -785,7 +785,7 @@ static CommandList lockTimerTickSystem_pure(ReadOnlyView<ActivePiece, TetriminoM
 }
 
 // =============================
-// 縦落下解決（純粋）
+// 縦落下解決(純粋)
 // =============================
 static CommandList resolveDropSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, MoveIntent> ro,
@@ -834,7 +834,7 @@ static CommandList resolveDropSystem_pure(
 }
 
 // =============================
-// ハードドロップ（純粋）
+// ハードドロップ(純粋)
 // =============================
 static CommandList hardDropSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, HardDropRequest> ro,
@@ -868,7 +868,7 @@ static CommandList hardDropSystem_pure(
 
         pos.y = ny;
 
-        // 設置：即ロック扱い（次フレームで確実に Merge）
+        // 設置：即ロック扱い(次フレームで確実に Merge)
         meta.status = PieceStatus::Landed;
         LockTimer lt{};
         lt.sec = kLockDelaySec;
@@ -882,14 +882,14 @@ static CommandList hardDropSystem_pure(
 }
 
 // =============================
-// ロック & マージ（純粋）
+// ロック & マージ(純粋)
 // =============================
 static CommandList lockAndMergeSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, LockTimer> ro,
     WriteCommands<GridResource> wr, const TetrisResources& res) {
     CommandList out;
     if (!ro.valid(res.grid_e)) return out;
-    auto grid = ro.get<GridResource>(res.grid_e);  // 書換え用コピー（最後に置換コマンドで反映）
+    auto grid = ro.get<GridResource>(res.grid_e);  // 書換え用コピー(最後に置換コマンドで反映)
 
     std::vector<entt::entity> to_fix;
     auto v = ro.view<ActivePiece, Position, TetriminoMeta, LockTimer>();
@@ -933,7 +933,7 @@ static CommandList lockAndMergeSystem_pure(
         // アクティブピース破棄
         out.emplace_back(wr.destroy(e));
 
-        // 新規スポーン（7-Bag）
+        // 新規スポーン(7-Bag)
         out.emplace_back(wr.create_then([&](entt::registry& r, entt::entity ne) {
             auto& g = r.get<GridResource>(res.grid_e);
             constexpr int spawn_col = 3;
@@ -964,7 +964,7 @@ static CommandList lockAndMergeSystem_pure(
 }
 
 // =============================
-// ライン消去（純粋）
+// ライン消去(純粋)
 // =============================
 static CommandList lineClearSystem_pure(ReadOnlyView<GridResource> ro,
                                         WriteCommands<GridResource> wr,
@@ -998,7 +998,7 @@ static CommandList lineClearSystem_pure(ReadOnlyView<GridResource> ro,
         for (int c0 = 0; c0 < grid.cols; ++c0) {
             const int idx = grid.index(r0, c0);
             grid.occ[idx] = CellStatus::Empty;
-            // ★ 任意：既定値でクリア（未使用だが保守性のため）
+            // ★ 任意：既定値でクリア(未使用だが保守性のため)
             grid.occ_type[idx] = PieceType::I;
         }
     }
@@ -1009,7 +1009,7 @@ static CommandList lineClearSystem_pure(ReadOnlyView<GridResource> ro,
 }
 
 // =============================
-// ゲームオーバー判定（純粋）
+// ゲームオーバー判定(純粋)
 // --- 追記: 生成された ActivePiece が置けない場合にフラグを立てる ---
 // =============================
 static CommandList gameOverCheckSystem_pure(
@@ -1047,7 +1047,7 @@ static CommandList gameOverCheckSystem_pure(
             // ★ 追加：ゲームオーバーフラグを ON
             const auto gameover = GameOver{true};
             out.emplace_back(wr.emplace_or_replace<GameOver>(res.grid_e, gameover));
-            // 以降のループは不要（単一アクティブ前提）。複数あっても一つで判定十分。
+            // 以降のループは不要(単一アクティブ前提)。複数あっても一つで判定十分。
             break;
         }
     }
@@ -1068,7 +1068,7 @@ export inline tl::expected<World, std::string> make_world(
     auto& registry = *world.registry;
     const auto& cfg = *gs;
 
-    // GridResource（singleton 的エンティティ）
+    // GridResource(singleton 的エンティティ)
     world.grid_singleton = registry.create();
     auto& grid = registry.emplace<GridResource>(world.grid_singleton);
     // ★ 追加：ゲームオーバーフラグ初期化
@@ -1089,7 +1089,7 @@ export inline tl::expected<World, std::string> make_world(
     const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
 
     // 7-Bag 初期化と取得
-    // registry のコンテキストに PieceQueue を保持（初回のみ emplace）
+    // registry のコンテキストに PieceQueue を保持(初回のみ emplace)
     auto& pq = registry.ctx().emplace<PieceQueue>();
     if (pq.queue.empty()) {
         refill_bag(pq);
@@ -1110,7 +1110,7 @@ export inline tl::expected<World, std::string> make_world(
     return world;
 }
 
-// 1フレーム更新（純粋システムのスケジューラで実行）
+// 1フレーム更新(純粋システムのスケジューラで実行)
 export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
     if (!w.registry) return;
     auto& world = *w.registry;
@@ -1145,12 +1145,12 @@ export bool is_gameover(const World& w) {
     return false;
 }
 
-// 描画（副作用：従来どおり直接描画でOK）
+// 描画(副作用：従来どおり直接描画でOK)
 export inline void render_world(const World& world, SDL_Renderer* renderer) {
     if (!world.registry) return;
     auto& registry = *world.registry;
 
-    // アルファブレンド有効化（ゴースト半透明描画用）
+    // アルファブレンド有効化(ゴースト半透明描画用)
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // 背景
@@ -1187,7 +1187,7 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
         SDL_RenderDrawRect(renderer, &outer);
     }
 
-    // ActivePiece 描画（TetriMino の描画を流用 -> ECS ローカルで置換）
+    // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
     auto view = registry.view<const ActivePiece, const Position, const TetriminoMeta>();
     for (auto e : view) {
         const auto& pos = view.get<const Position>(e);
@@ -1200,11 +1200,11 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
         // 形状セル
         const auto cells = cells_for(meta.type, meta.direction);
 
-        // ★ 追加：ゴースト描画（落下予定位置のシルエット）
+        // ★ 追加：ゴースト描画(落下予定位置のシルエット)
         if (grid) {
             const Position ghostPos = compute_ghost_position(*grid, pos, meta);
 
-            // ゴースト用の色（同じ色でアルファのみ薄くする）
+            // ゴースト用の色(同じ色でアルファのみ薄くする)
             const SDL_Color baseColor = to_color(meta.type);
             SDL_SetRenderDrawColor(renderer, baseColor.r, baseColor.g, baseColor.b, 80);
 
@@ -1216,11 +1216,11 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
             }
         }
 
-        // 色設定（本体）
+        // 色設定(本体)
         const SDL_Color color = to_color(meta.type);
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-        // 形状セル（本体）
+        // 形状セル(本体)
         for (const auto& c : cells) {
             const int x = pos.x + static_cast<int>(c.second) * cell_width;
             const int y = pos.y + static_cast<int>(c.first) * cell_height;
@@ -1228,7 +1228,7 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
             SDL_RenderFillRect(renderer, &rect);
         }
 
-        // 4x4 グリッド（元 render_grid_around 相当）
+        // 4x4 グリッド(元 render_grid_around 相当)
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         const int grid_w = cell_width * 4;
         const int grid_h = cell_height * 4;
