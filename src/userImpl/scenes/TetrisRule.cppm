@@ -642,21 +642,7 @@ static CommandList lockAndMergeSystem_pure(
         const auto& pos = v.template get<Position>(e);
         const auto& meta = v.template get<TetriminoMeta>(e);
 
-        std::array<Coord, 4> cells{};
-        switch (meta.direction) {
-            case PieceDirection::North:
-                cells = get_cells_north_local(meta.type);
-                break;
-            case PieceDirection::East:
-                cells = get_cells_east_local(meta.type);
-                break;
-            case PieceDirection::South:
-                cells = get_cells_south_local(meta.type);
-                break;
-            case PieceDirection::West:
-                cells = get_cells_west_local(meta.type);
-                break;
-        }
+        std::array<Coord, 4> cells = cells_for(meta.type, meta.direction);
         for (auto [rr, cc] : cells) {
             const int col = (pos.x - grid.origin_x) / grid.cellW + cc;
             const int row = (pos.y - grid.origin_y) / grid.cellH + rr;
@@ -975,7 +961,18 @@ inline void render_current_tetrimino(const World& world, SDL_Renderer* const ren
     }
 }
 
-inline void render_next_area(const World& world, SDL_Renderer* const renderer) {}
+inline void render_next_area(const World& world, SDL_Renderer* const renderer) {
+    auto& registry = *world.registry;
+    // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
+    auto view = registry.view<const PieceQueue>();
+    for (auto e : view) {
+        const auto& queue = view.get<const PieceQueue>(e);
+        const auto queue_view = view_queue(queue);
+        for (PieceType piece_type : queue_view) {
+            // TODO:
+        }
+    }
+}
 
 // 描画(副作用：従来どおり直接描画でOK)
 export inline void render_world(const World& world, SDL_Renderer* const renderer) {

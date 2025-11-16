@@ -52,8 +52,8 @@ export struct TetriminoMeta {
     int minimumY{0};  // ロック/回転リセット用
 };
 
-// 依存除去: 引数型を ECS の PieceType / PieceDirection に変更
-export constexpr std::array<Coord, 4> get_cells_north_local(PieceType type) noexcept {
+// 4*4グリッド上の各向きでのセル座標を定義する関数群(埋まっているセルをオフセットで表現)
+constexpr std::array<Coord, 4> get_cells_north_local(PieceType type) noexcept {
     switch (type) {
         case PieceType::I:
             return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{1, 3}};
@@ -72,8 +72,7 @@ export constexpr std::array<Coord, 4> get_cells_north_local(PieceType type) noex
     }
     return {};
 }
-
-export constexpr std::array<Coord, 4> get_cells_east_local(PieceType type) noexcept {
+constexpr std::array<Coord, 4> get_cells_east_local(PieceType type) noexcept {
     switch (type) {
         case PieceType::I:
             return {Coord{0, 2}, Coord{1, 2}, Coord{2, 2}, Coord{3, 2}};
@@ -93,7 +92,7 @@ export constexpr std::array<Coord, 4> get_cells_east_local(PieceType type) noexc
     return {};
 }
 
-export constexpr std::array<Coord, 4> get_cells_south_local(PieceType type) noexcept {
+constexpr std::array<Coord, 4> get_cells_south_local(PieceType type) noexcept {
     switch (type) {
         case PieceType::I:
             return {Coord{2, 0}, Coord{2, 1}, Coord{2, 2}, Coord{2, 3}};
@@ -113,7 +112,7 @@ export constexpr std::array<Coord, 4> get_cells_south_local(PieceType type) noex
     return {};
 }
 
-export constexpr std::array<Coord, 4> get_cells_west_local(PieceType type) noexcept {
+constexpr std::array<Coord, 4> get_cells_west_local(PieceType type) noexcept {
     switch (type) {
         case PieceType::I:
             return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{3, 1}};
