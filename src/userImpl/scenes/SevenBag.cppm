@@ -22,11 +22,25 @@ export inline void refill_bag(PieceQueue& pq) {
 }
 
 export inline PieceType take_next(PieceQueue& pq) {
-    if (pq.queue.empty()) refill_bag(pq);
+    // キューが空ならとりあえず1Bag補充（初期化用）
+    if (pq.queue.empty()) {
+        refill_bag(pq);
+    }
+
+    // 先頭を1つ取り出す
     auto t = pq.queue.front();
     pq.queue.pop_front();
+
+    // ★ ここで「2Bag 目」を常に用意しておく
+    //    7 個未満になったら次の Bag を足す
+    constexpr std::size_t bag_size = 7;
+    if (pq.queue.size() < bag_size) {
+        refill_bag(pq);
+    }
+
     return t;
 }
+
 
 /**
  * @brief 現在のキューを読み取り専用で返す
