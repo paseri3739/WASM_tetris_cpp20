@@ -943,19 +943,19 @@ inline void render_current_tetrimino(const World& world, SDL_Renderer* const ren
                                cell_height, color);
 
         // 4x4 グリッド(元 render_grid_around 相当)
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        const int grid_w = cell_width * 4;
-        const int grid_h = cell_height * 4;
-        SDL_Rect frame = {pos.x, pos.y, grid_w, grid_h};
-        SDL_RenderDrawRect(renderer, &frame);
-        for (int c = 1; c <= 3; ++c) {
-            const int x = pos.x + c * cell_width;
-            SDL_RenderDrawLine(renderer, x, pos.y, x, pos.y + grid_h);
-        }
-        for (int r0 = 1; r0 <= 3; ++r0) {
-            const int y = pos.y + r0 * cell_height;
-            SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
-        }
+        // SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        // const int grid_w = cell_width * 4;
+        // const int grid_h = cell_height * 4;
+        // SDL_Rect frame = {pos.x, pos.y, grid_w, grid_h};
+        // SDL_RenderDrawRect(renderer, &frame);
+        // for (int c = 1; c <= 3; ++c) {
+        //     const int x = pos.x + c * cell_width;
+        //     SDL_RenderDrawLine(renderer, x, pos.y, x, pos.y + grid_h);
+        // }
+        // for (int r0 = 1; r0 <= 3; ++r0) {
+        //     const int y = pos.y + r0 * cell_height;
+        //     SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
+        // }
     }
 }
 
