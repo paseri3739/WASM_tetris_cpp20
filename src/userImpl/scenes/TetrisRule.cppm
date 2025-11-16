@@ -1170,19 +1170,8 @@ export bool is_gameover(const World& w) {
     return false;
 }
 
-// 描画(副作用：従来どおり直接描画でOK)
-export inline void render_world(const World& world, SDL_Renderer* renderer) {
-    if (!world.registry) return;
+inline void render_grid(const World& world, SDL_Renderer* const renderer) {
     auto& registry = *world.registry;
-
-    // アルファブレンド有効化(ゴースト半透明描画用)
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-    // 背景
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderClear(renderer);
-
-    // Grid
     if (auto* grid = registry.try_get<GridResource>(world.grid_singleton)) {
         for (int row = 0; row < grid->rows; ++row) {
             for (int col = 0; col < grid->cols; ++col) {
@@ -1211,7 +1200,10 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
                        grid->rows * grid->cellH};
         SDL_RenderDrawRect(renderer, &outer);
     }
+}
 
+inline void render_current_tetrimino(const World& world, SDL_Renderer* const renderer) {
+    auto& registry = *world.registry;
     // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
     auto view = registry.view<const ActivePiece, const Position, const TetriminoMeta>();
     for (auto e : view) {
@@ -1267,9 +1259,26 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
             const int y = pos.y + r0 * cell_height;
             SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
         }
-
-        // TODO: NEXT / HOLD 表示
     }
+}
+
+// 描画(副作用：従来どおり直接描画でOK)
+export inline void render_world(const World& world, SDL_Renderer* const renderer) {
+    if (!world.registry) return;
+
+    // アルファブレンド有効化(ゴースト半透明描画用)
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // 背景クリア
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
+
+    // グリッド描画
+    render_grid(world, renderer);
+
+    // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
+    render_current_tetrimino(world, renderer);
+    // TODO: NEXT / HOLD 表示
 
     SDL_RenderPresent(renderer);
 }
