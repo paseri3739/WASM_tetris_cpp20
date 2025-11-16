@@ -44,7 +44,9 @@ export struct Position {
 /**
  * @brief 操作対象のテトリミノエンティティ
  */
-export struct ActivePiece {};
+export struct ActivePiece {
+    entt::entity entity{entt::null};
+};
 /**
  * @brief 重力コンポーネント
  * @param rate_cps 落下速度(セル／秒)
@@ -88,7 +90,9 @@ export struct LockTimer {
 /**
  * @brief  ハードドロップリクエストコンポーネント(押下フレームのみ)
  */
-struct HardDropRequest {};
+struct HardDropRequest {
+    entt::entity entity{entt::null};
+};
 
 // 盤面占有
 export enum class CellStatus : std::uint8_t { Empty, Filled };
@@ -971,7 +975,7 @@ export inline void render_next_area(const World& world, SDL_Renderer* const rend
 
     const int marginX = 10;
     const int marginY = 10;
-    int baseX = holdW + gridW + +marginX;
+    const int baseX = holdW + gridW + +marginX;
     int baseY = marginY;
 
     // "NEXT" ラベル描画
@@ -1043,6 +1047,41 @@ export inline void render_next_area(const World& world, SDL_Renderer* const rend
     }
 }
 
+export inline void render_hold_area(const World& world, SDL_Renderer* const renderer,
+                                    const Env<GlobalSetting>& env) {
+    auto& registry = *world.registry;
+    const auto& setting = env.setting;
+
+    const int cellW = setting.cellWidth;
+    const int cellH = setting.cellHeight;
+    const int holdW = setting.holdAreaWidth;
+
+    const int marginX = 10;
+    const int marginY = 10;
+    const int baseX = marginX;
+    int baseY = marginY;
+
+    // "HOLD" ラベル描画
+    if (TTF_Font* font = setting.get_font()) {
+        const char* label = "HOLD";
+        SDL_Color color = {0, 0, 0, 255};
+
+        SurfacePtr surface(TTF_RenderUTF8_Blended(font, label, color), SDL_FreeSurface);
+        if (surface) {
+            TexturePtr texture(SDL_CreateTextureFromSurface(renderer, surface.get()),
+                               SDL_DestroyTexture);
+            if (texture) {
+                SDL_Rect dstRect{baseX, baseY, surface->w, surface->h};
+                SDL_RenderCopy(renderer, texture.get(), nullptr, &dstRect);
+            }
+        }
+
+        baseY += cellH * 2;
+    }
+
+    // TODO: ホールドピースの描画は省略(必要に応じて実装)
+}
+
 // 描画(副作用：従来どおり直接描画でOK)
 export inline void render_world(const World& world, SDL_Renderer* const renderer,
                                 const Env<GlobalSetting>& env) {
@@ -1062,6 +1101,7 @@ export inline void render_world(const World& world, SDL_Renderer* const renderer
     render_current_tetrimino(world, renderer);
     // TODO: NEXT / HOLD 表示
     render_next_area(world, renderer, env);
+    render_hold_area(world, renderer, env);
     SDL_RenderPresent(renderer);
 }
 
