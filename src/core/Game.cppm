@@ -57,8 +57,8 @@ class Game final {
         }
         window_.reset(raw_window);
 
-        SDL_Renderer* raw_renderer =
-            SDL_CreateRenderer(window_.get(), -1, SDL_RENDERER_ACCELERATED);
+        SDL_Renderer* raw_renderer = SDL_CreateRenderer(
+            window_.get(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         if (!raw_renderer) {
             std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError()
                       << std::endl;

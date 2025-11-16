@@ -1,7 +1,9 @@
 module;
 #include <SDL2/SDL.h>
+#include <SDL_ttf.h>
 #include <entt/entt.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tl/expected.hpp>
 #include <vector>
@@ -891,6 +893,22 @@ inline void render_grid(const World& world, SDL_Renderer* const renderer) {
     }
 }
 
+inline void render_tetrimino_cells(SDL_Renderer* const renderer, int originX, int originY,
+                                   const PieceType& type, const PieceDirection& direction,
+                                   int cellW, int cellH, SDL_Color color) {
+    // 色設定
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    // 形状セル
+    const auto cells = cells_for(type, direction);
+    for (const auto& c : cells) {
+        const int x = originX + static_cast<int>(c.second) * cellW;
+        const int y = originY + static_cast<int>(c.first) * cellH;
+        SDL_Rect rect = {x, y, cellW, cellH};
+        SDL_RenderFillRect(renderer, &rect);
+    }
+}
+
 inline void render_current_tetrimino(const World& world, SDL_Renderer* const renderer) {
     auto& registry = *world.registry;
     // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
@@ -903,36 +921,26 @@ inline void render_current_tetrimino(const World& world, SDL_Renderer* const ren
         const int cell_width = grid ? grid->cellW : 30;
         const int cell_height = grid ? grid->cellH : 30;
 
-        // 形状セル
-        const auto cells = cells_for(meta.type, meta.direction);
-
         // ★ 追加：ゴースト描画(落下予定位置のシルエット)
         if (grid) {
             const Position ghostPos = compute_ghost_position(*grid, pos, meta);
 
             // ゴースト用の色(同じ色でアルファのみ薄くする)
-            const SDL_Color baseColor = to_color(meta.type);
-            SDL_SetRenderDrawColor(renderer, baseColor.r, baseColor.g, baseColor.b, 80);
+            SDL_Color ghostColor = to_color(meta.type);
+            ghostColor.a = 80;
 
-            for (const auto& c : cells) {
-                const int x = ghostPos.x + static_cast<int>(c.second) * cell_width;
-                const int y = ghostPos.y + static_cast<int>(c.first) * cell_height;
-                SDL_Rect rect = {x, y, cell_width, cell_height};
-                SDL_RenderFillRect(renderer, &rect);
-            }
+            render_tetrimino_cells(renderer, ghostPos.x, ghostPos.y, meta.type, meta.direction,
+                                   cell_width, cell_height, ghostColor);
         }
 
         // 色設定(本体)
-        const SDL_Color color = to_color(meta.type);
-        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        SDL_Color color = to_color(meta.type);
+        // color.a は to_color 側のデフォルトをそのまま利用
+        // 必要ならここで color.a を上書き
 
         // 形状セル(本体)
-        for (const auto& c : cells) {
-            const int x = pos.x + static_cast<int>(c.second) * cell_width;
-            const int y = pos.y + static_cast<int>(c.first) * cell_height;
-            SDL_Rect rect = {x, y, cell_width, cell_height};
-            SDL_RenderFillRect(renderer, &rect);
-        }
+        render_tetrimino_cells(renderer, pos.x, pos.y, meta.type, meta.direction, cell_width,
+                               cell_height, color);
 
         // 4x4 グリッド(元 render_grid_around 相当)
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -951,21 +959,93 @@ inline void render_current_tetrimino(const World& world, SDL_Renderer* const ren
     }
 }
 
-inline void render_next_area(const World& world, SDL_Renderer* const renderer) {
+export inline void render_next_area(const World& world, SDL_Renderer* const renderer,
+                                    const Env<GlobalSetting>& env) {
     auto& registry = *world.registry;
-    // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
-    auto view = registry.view<const PieceQueue>();
-    for (auto e : view) {
-        const auto& queue = view.get<const PieceQueue>(e);
-        const auto queue_view = view_queue(queue);
-        for (PieceType piece_type : queue_view) {
-            // TODO:
+    const auto& setting = env.setting;
+
+    const int cellW = setting.cellWidth;
+    const int cellH = setting.cellHeight;
+    const int gridW = setting.gridAreaWidth;
+
+    const int marginX = 10;
+    const int marginY = 10;
+    int baseX = gridW + marginX;
+    int baseY = marginY;
+
+    // "NEXT" ラベル描画
+    if (TTF_Font* font = setting.get_font()) {
+        const char* label = "NEXT";
+        SDL_Color white{255, 255, 255, 255};
+
+        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, label, white);
+        if (surface) {
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+            if (texture) {
+                SDL_Rect dstRect{baseX, baseY, surface->w, surface->h};
+                SDL_RenderCopy(renderer, texture, nullptr, &dstRect);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(surface);
         }
+
+        baseY += cellH * 2;
+    }
+
+    // ★ ここを ctx からの取得に変更する
+    // registry.ctx() に PieceQueue が存在しない場合は何も描画しないで終了
+    auto* pq = registry.ctx().find<PieceQueue>();
+    if (!pq) {
+        return;
+    }
+
+    const auto queue_view = view_queue(*pq);
+
+    // 先読みで表示する最大個数（必要に応じて変更）
+    constexpr std::size_t max_preview = 5;
+    std::size_t index = 0;
+
+    for (PieceType piece_type : queue_view) {
+        if (index >= max_preview) break;
+
+        const int panelX = baseX;
+        const int panelY =
+            baseY + static_cast<int>(index) * (cellH * 4 + cellH);  // 1 個分の高さ + 余白
+
+        // パネル枠（4x4）
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
+        SDL_Rect frame{panelX, panelY, cellW * 4, cellH * 4};
+        SDL_RenderDrawRect(renderer, &frame);
+
+        // グリッド線（任意）
+        for (int c = 1; c <= 3; ++c) {
+            const int x = panelX + c * cellW;
+            SDL_RenderDrawLine(renderer, x, panelY, x, panelY + cellH * 4);
+        }
+        for (int r = 1; r <= 3; ++r) {
+            const int y = panelY + r * cellH;
+            SDL_RenderDrawLine(renderer, panelX, y, panelX + cellW * 4, y);
+        }
+
+        // テトリミノ本体（NEXT は固定向きとする）
+        const SDL_Color color = to_color(piece_type);
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+        const auto cells = cells_for(piece_type, PieceDirection::West);
+        for (const auto& c : cells) {
+            const int x = panelX + static_cast<int>(c.second) * cellW;
+            const int y = panelY + static_cast<int>(c.first) * cellH;
+            SDL_Rect rect{x, y, cellW, cellH};
+            SDL_RenderFillRect(renderer, &rect);
+        }
+
+        ++index;
     }
 }
 
 // 描画(副作用：従来どおり直接描画でOK)
-export inline void render_world(const World& world, SDL_Renderer* const renderer) {
+export inline void render_world(const World& world, SDL_Renderer* const renderer,
+                                const Env<GlobalSetting>& env) {
     if (!world.registry) return;
 
     // アルファブレンド有効化(ゴースト半透明描画用)
@@ -981,7 +1061,7 @@ export inline void render_world(const World& world, SDL_Renderer* const renderer
     // ActivePiece 描画(TetriMino の描画を流用 -> ECS ローカルで置換)
     render_current_tetrimino(world, renderer);
     // TODO: NEXT / HOLD 表示
-
+    render_next_area(world, renderer, env);
     SDL_RenderPresent(renderer);
 }
 

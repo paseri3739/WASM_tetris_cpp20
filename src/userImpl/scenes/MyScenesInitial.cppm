@@ -54,7 +54,7 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
 // 描画
 inline void render(const InitialData& s, SDL_Renderer* const renderer,
                    const Env<global_setting::GlobalSetting>& env) {
-    tetris_rule::render_world(s.world, renderer);
+    tetris_rule::render_world(s.world, renderer, env);
 }
 
 }  // namespace my_scenes
