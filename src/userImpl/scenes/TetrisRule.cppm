@@ -795,7 +795,7 @@ export inline tl::expected<World, std::string> make_world(
     grid.cols = cfg.gridColumns;
     grid.cellW = cfg.cellWidth;
     grid.cellH = cfg.cellHeight;
-    grid.origin_x = 0;
+    grid.origin_x = cfg.holdAreaWidth;  // 左側にホールドエリア分のオフセット
     grid.origin_y = 0;
     grid.occ.assign(grid.rows * grid.cols, CellStatus::Empty);
     grid.occ_type.assign(grid.rows * grid.cols, PieceType::I);  // 初期値は未使用だが埋めておく
@@ -967,10 +967,11 @@ export inline void render_next_area(const World& world, SDL_Renderer* const rend
     const int cellW = setting.cellWidth;
     const int cellH = setting.cellHeight;
     const int gridW = setting.gridAreaWidth;
+    const int holdW = setting.holdAreaWidth;
 
     const int marginX = 10;
     const int marginY = 10;
-    int baseX = gridW + marginX;
+    int baseX = holdW + gridW + +marginX;
     int baseY = marginY;
 
     // "NEXT" ラベル描画

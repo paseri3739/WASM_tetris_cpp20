@@ -31,6 +31,8 @@ struct GlobalSetting {
     const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
     const int maxDropsPerFrame = 6;   // 1フレームあたりの最大ドロップセル数
     const int maxRotationLocks = 15;  // 1回の回転操作あたりの最大ロック回数
+    const int nextAreaWidth = 150;    // Next表示領域幅(ピクセル)
+    const int holdAreaWidth = 150;    // Hold表示領域幅(ピクセル)
 
     // フォントキャッシュ
     FontPtr font;

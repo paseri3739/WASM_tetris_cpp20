@@ -16,7 +16,7 @@ int main() {
     constexpr int cell_height = 30;
     constexpr int fps = 60;
     constexpr double drop_rate = 0.7;
-    constexpr int canvas_width = columns * cell_width + 150;  // 右側にnextを出すための150px
+    constexpr int canvas_width = columns * cell_width + (150 * 2);  // 右側にnextを出すための150px
     constexpr int canvas_height = rows * cell_height;
 
     // SDL 初期化 / window / renderer 生成後に呼ばれる Setting のファクトリ
