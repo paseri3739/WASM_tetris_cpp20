@@ -143,11 +143,21 @@ endif()
 # Emscripten + SDL2 (Ports) を使う場合のリンクオプション
 # -sUSE_SDL=2 はリンク時オプションなので target_link_options で指定
 if(EMSCRIPTEN)
-        target_link_options(app PRIVATE
+        # SDL 関連の port フラグ（コンパイル時にも必要）
+        set(_EMSCRIPTEN_SDL_FLAGS
                 "-sUSE_SDL=2"
                 "-sUSE_SDL_IMAGE=2"
                 "-sUSE_SDL_MIXER=2"
                 "-sUSE_SDL_TTF=2"
+        )
+
+        # SDL のヘッダをインクルードするターゲットのコンパイル時にもフラグを渡す
+        target_compile_options(user_impl PRIVATE ${_EMSCRIPTEN_SDL_FLAGS})
+        target_compile_options(app PRIVATE ${_EMSCRIPTEN_SDL_FLAGS})
+
+        # 実際のリンクオプション
+        target_link_options(app PRIVATE
+                ${_EMSCRIPTEN_SDL_FLAGS}
                 "-sALLOW_MEMORY_GROWTH=1"
                 "-sASSERTIONS=1"
 
@@ -157,6 +167,7 @@ if(EMSCRIPTEN)
 
         set_target_properties(app PROPERTIES SUFFIX ".html")
 endif()
+
 
 
 # ▼ テスト用バイナリ(**GUI 依存を切り離す**)

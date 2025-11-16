@@ -1,6 +1,6 @@
 module;
 #include <SDL2/SDL.h>
-#include <SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #include <entt/entt.hpp>
 #include <memory>
 #include <optional>
