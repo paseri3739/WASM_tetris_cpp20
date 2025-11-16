@@ -16,6 +16,7 @@ import GameKey;
 import TetrisRule; // make_initial の再呼び出し経路で必要
 import :Core;
 import :Initial;  // make_initial を呼ぶため
+import SDLPtr;
 
 export namespace my_scenes {
 
@@ -47,14 +48,15 @@ inline void render(const ThirdData& s, SDL_Renderer* const renderer,
         SDL_Color color{255, 255, 255, 255};
 
         // UTF-8 文字列としてレンダリング
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(setting.font.get(), text, color);
+        SurfacePtr surface(TTF_RenderUTF8_Blended(setting.font.get(), text, color),
+                           SDL_FreeSurface);
         if (surface) {
-            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+            TexturePtr texture(SDL_CreateTextureFromSurface(renderer, surface.get()),
+                               SDL_DestroyTexture);
             if (texture) {
                 int tex_w = 0;
                 int tex_h = 0;
-                SDL_QueryTexture(texture, nullptr, nullptr, &tex_w, &tex_h);
-
+                SDL_QueryTexture(texture.get(), nullptr, nullptr, &tex_w, &tex_h);
                 // 画面中央に配置
                 SDL_Rect dst{};
                 dst.w = tex_w;
@@ -62,10 +64,8 @@ inline void render(const ThirdData& s, SDL_Renderer* const renderer,
                 dst.x = (setting.gridAreaWidth - tex_w) / 2;
                 dst.y = (setting.gridAreaHeight - tex_h) / 2;
 
-                SDL_RenderCopy(renderer, texture, nullptr, &dst);
-                SDL_DestroyTexture(texture);
+                SDL_RenderCopy(renderer, texture.get(), nullptr, &dst);
             }
-            SDL_FreeSurface(surface);
         }
     }
 

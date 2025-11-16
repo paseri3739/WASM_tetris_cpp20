@@ -17,8 +17,8 @@ import Input;
 import Tetrimino;
 import SRS;
 import SevenBag;
-// ★ 追加：フレームワーク側の純粋システム実行基盤を import
 import Command;
+import SDLPtr;
 
 namespace tetris_rule {
 
@@ -976,17 +976,16 @@ export inline void render_next_area(const World& world, SDL_Renderer* const rend
     // "NEXT" ラベル描画
     if (TTF_Font* font = setting.get_font()) {
         const char* label = "NEXT";
-        SDL_Color white{255, 255, 255, 255};
+        SDL_Color color = {0, 0, 0, 255};
 
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, label, white);
+        SurfacePtr surface(TTF_RenderUTF8_Blended(font, label, color), SDL_FreeSurface);
         if (surface) {
-            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+            TexturePtr texture(SDL_CreateTextureFromSurface(renderer, surface.get()),
+                               SDL_DestroyTexture);
             if (texture) {
                 SDL_Rect dstRect{baseX, baseY, surface->w, surface->h};
-                SDL_RenderCopy(renderer, texture, nullptr, &dstRect);
-                SDL_DestroyTexture(texture);
+                SDL_RenderCopy(renderer, texture.get(), nullptr, &dstRect);
             }
-            SDL_FreeSurface(surface);
         }
 
         baseY += cellH * 2;
