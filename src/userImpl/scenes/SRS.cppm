@@ -8,29 +8,15 @@ import Tetrimino;
 // SRS キックオフセット定義
 // =============================
 
-export struct KickOffset {
+struct KickOffset {
     int dx;  // 列方向オフセット(セル単位)
     int dy;  // 行方向オフセット(セル単位)
 };
 
-export constexpr int dir_index(PieceDirection d) noexcept {
-    switch (d) {
-        case PieceDirection::North:
-            return 0;
-        case PieceDirection::East:
-            return 1;
-        case PieceDirection::South:
-            return 2;
-        case PieceDirection::West:
-            return 3;
-    }
-    return 0;
-}
-
 // JLSTZ 用 SRS キックテーブル(回転 0, R, 2, L = North, East, South, West)
 // 参照: Tetris Guideline SRS
-export constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
-                                                           PieceDirection to) noexcept {
+constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
+                                                    PieceDirection to) noexcept {
     using D = PieceDirection;
     // 0 -> R
     if (from == D::North && to == D::East) {
@@ -70,8 +56,7 @@ export constexpr std::array<KickOffset, 5> srs_kicks_jlstz(PieceDirection from,
 }
 
 // I ミノ用 SRS キックテーブル
-export constexpr std::array<KickOffset, 5> srs_kicks_i(PieceDirection from,
-                                                       PieceDirection to) noexcept {
+constexpr std::array<KickOffset, 5> srs_kicks_i(PieceDirection from, PieceDirection to) noexcept {
     using D = PieceDirection;
     // 0 -> R
     if (from == D::North && to == D::East) {
