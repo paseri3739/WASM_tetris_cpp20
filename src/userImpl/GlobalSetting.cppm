@@ -26,6 +26,11 @@ struct GlobalSetting {
     const int gridAreaHeight;
     const int frameRate;
     const double dropRate;
+    const int spawn_col = 3;          // スポーン列
+    const int spawn_row = 3;          // スポーン行
+    const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
+    const int maxDropsPerFrame = 6;   // 1フレームあたりの最大ドロップセル数
+    const int maxRotationLocks = 15;  // 1回の回転操作あたりの最大ロック回数
 
     // フォントキャッシュ
     FontPtr font;

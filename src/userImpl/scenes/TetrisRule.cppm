@@ -84,11 +84,6 @@ export struct LockTimer {
 };
 
 /**
- * @brief ロック遅延時間(秒)
- */
-constexpr double kLockDelaySec = 0.3;
-
-/**
  * @brief  ハードドロップリクエストコンポーネント(押下フレームのみ)
  */
 struct HardDropRequest {};
@@ -309,7 +304,6 @@ static CommandList gravitySystem_pure(
     auto moveView = ro.view<MoveIntent>();
 
     for (auto e : v) {
-        constexpr int kMaxDropsPerFrame = 6;
         const auto& g = v.template get<Gravity>(e);
         const auto& sd = v.template get<SoftDrop>(e);
 
@@ -318,7 +312,7 @@ static CommandList gravitySystem_pure(
         acc.cells += res.env.dt * rate;
 
         int steps = static_cast<int>(std::floor(acc.cells));
-        steps = std::max(0, std::min(steps, kMaxDropsPerFrame));
+        steps = std::max(0, std::min(steps, res.env.setting.maxDropsPerFrame));
 
         if (steps > 0) {
             MoveIntent mi{};
@@ -356,7 +350,7 @@ static CommandList resolveRotationSystem_pure(
 
         if (ri.dir == 0) continue;
 
-        constexpr int kMaxRotationLocks = 15;
+        const int kMaxRotationLocks = res.env.setting.maxRotationLocks;
 
         // ★ 追加:
         //    着地中かつ回転回数が上限に達している場合は、
@@ -608,7 +602,7 @@ static CommandList hardDropSystem_pure(
         // 設置：即ロック扱い(次フレームで確実に Merge)
         meta.status = PieceStatus::Landed;
         LockTimer lt{};
-        lt.sec = kLockDelaySec;
+        lt.sec = res.env.setting.lockDelaySec;
 
         out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
         out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
@@ -634,7 +628,7 @@ static CommandList lockAndMergeSystem_pure(
         const auto& meta = v.template get<TetriminoMeta>(e);
         const auto& lt = v.template get<LockTimer>(e);
         if (meta.status == PieceStatus::Falling) continue;
-        if (lt.sec < kLockDelaySec) continue;
+        if (lt.sec < res.env.setting.lockDelaySec) continue;
         to_fix.push_back(e);
     }
 
@@ -659,10 +653,8 @@ static CommandList lockAndMergeSystem_pure(
         // 新規スポーン(7-Bag)
         out.emplace_back(wr.create_then([&](entt::registry& r, entt::entity ne) {
             auto& g = r.get<GridResource>(res.grid_e);
-            constexpr int spawn_col = 3;
-            constexpr int spawn_row = 3;
-            const int spawn_x = g.origin_x + spawn_col * g.cellW;
-            const int spawn_y = g.origin_y + spawn_row * g.cellH;
+            const int spawn_x = g.origin_x + res.env.setting.spawn_col * g.cellW;
+            const int spawn_y = g.origin_y + res.env.setting.spawn_row * g.cellH;
 
             // registry のコンテキストに保存してある PieceQueue を使用
             auto& piece_queue = r.ctx().get<PieceQueue>();
@@ -807,10 +799,8 @@ export inline tl::expected<World, std::string> make_world(
     grid.occ_type.assign(grid.rows * grid.cols, PieceType::I);  // 初期値は未使用だが埋めておく
 
     // アクティブピース
-    constexpr int spawn_col = 3;
-    constexpr int spawn_row = 3;
-    const int spawn_x = grid.origin_x + spawn_col * grid.cellW;
-    const int spawn_y = grid.origin_y + spawn_row * grid.cellH;
+    const int spawn_x = grid.origin_x + gs->spawn_col * grid.cellW;
+    const int spawn_y = grid.origin_y + gs->spawn_row * grid.cellH;
 
     // 7-Bag 初期化と取得
     // registry のコンテキストに PieceQueue を保持(初回のみ emplace)
