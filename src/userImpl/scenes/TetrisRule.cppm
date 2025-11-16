@@ -1267,6 +1267,8 @@ export inline void render_world(const World& world, SDL_Renderer* renderer) {
             const int y = pos.y + r0 * cell_height;
             SDL_RenderDrawLine(renderer, pos.x, y, pos.x + grid_w, y);
         }
+
+        // TODO: NEXT / HOLD 表示
     }
 
     SDL_RenderPresent(renderer);
