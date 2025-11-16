@@ -18,6 +18,7 @@ import GlobalSetting;
 import SceneFramework;
 import GameKey;
 import Input;
+import Tetrimino;
 
 // ★ 追加：フレームワーク側の純粋システム実行基盤を import
 import Command;
@@ -34,32 +35,6 @@ using scene_fw::Env;
 // ECS コンポーネント／リソース
 // =============================
 
-// テトリミノ関連enum
-export enum class PieceType { I, O, T, S, Z, J, L };
-export enum class PieceStatus { Falling, Landed, Merged };
-export enum class PieceDirection { North, East, South, West };
-
-// 色ユーティリティ
-constexpr SDL_Color to_color(PieceType type) noexcept {
-    switch (type) {
-        case PieceType::I:
-            return SDL_Color{0, 255, 255, 255};  // シアン
-        case PieceType::O:
-            return SDL_Color{255, 255, 0, 255};  // 黄色
-        case PieceType::T:
-            return SDL_Color{128, 0, 128, 255};  // 紫
-        case PieceType::S:
-            return SDL_Color{0, 255, 0, 255};  // 緑
-        case PieceType::Z:
-            return SDL_Color{255, 0, 0, 255};  // 赤
-        case PieceType::J:
-            return SDL_Color{0, 0, 255, 255};  // 青
-        case PieceType::L:
-            return SDL_Color{255, 165, 0, 255};  // オレンジ
-    }
-    return SDL_Color{255, 255, 255, 255};
-}
-
 /**
  * @brief  位置コンポーネント(ピクセル単位)
  * @param x ピクセル単位の X 座標
@@ -67,21 +42,6 @@ constexpr SDL_Color to_color(PieceType type) noexcept {
  */
 export struct Position {
     int x{}, y{};
-};
-
-/**
- * @brief テトリミノのメタ情報
- * @param type テトリミノ種別
- * @param direction 向き
- * @param status 現在の状態
- * @param rotationCount 現在のY座標で何回回転したか(無限に回転できないようにする)
- */
-export struct TetriminoMeta {
-    PieceType type{};
-    PieceDirection direction{};
-    PieceStatus status{};
-    int rotationCount{0};
-    int minimumY{0};  // ロック/回転リセット用
 };
 
 /**
@@ -190,107 +150,6 @@ export struct GridResource {
         return SDL_Rect{origin_x + column * cellW, origin_y + row * cellH, cellW, cellH};
     }
 };
-
-// =============================
-// 形状ヘルパ(ローカル定義)
-// =============================
-
-using Coord = std::pair<std::int8_t, std::int8_t>;
-
-// 依存除去: 引数型を ECS の PieceType / PieceDirection に変更
-static constexpr std::array<Coord, 4> get_cells_north_local(PieceType type) noexcept {
-    switch (type) {
-        case PieceType::I:
-            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{1, 3}};
-        case PieceType::O:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::T:
-            return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::S:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 0}, Coord{1, 1}};
-        case PieceType::Z:
-            return {Coord{0, 0}, Coord{0, 1}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::J:
-            return {Coord{0, 0}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::L:
-            return {Coord{0, 2}, Coord{1, 0}, Coord{1, 1}, Coord{1, 2}};
-    }
-    return {};
-}
-
-static constexpr std::array<Coord, 4> get_cells_east_local(PieceType type) noexcept {
-    switch (type) {
-        case PieceType::I:
-            return {Coord{0, 2}, Coord{1, 2}, Coord{2, 2}, Coord{3, 2}};
-        case PieceType::O:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::T:
-            return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case PieceType::S:
-            return {Coord{0, 1}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
-        case PieceType::Z:
-            return {Coord{0, 2}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case PieceType::J:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{2, 1}};
-        case PieceType::L:
-            return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
-    }
-    return {};
-}
-
-static constexpr std::array<Coord, 4> get_cells_south_local(PieceType type) noexcept {
-    switch (type) {
-        case PieceType::I:
-            return {Coord{2, 0}, Coord{2, 1}, Coord{2, 2}, Coord{2, 3}};
-        case PieceType::O:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::T:
-            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 1}};
-        case PieceType::S:
-            return {Coord{1, 1}, Coord{1, 2}, Coord{2, 0}, Coord{2, 1}};
-        case PieceType::Z:
-            return {Coord{1, 0}, Coord{1, 1}, Coord{2, 1}, Coord{2, 2}};
-        case PieceType::J:
-            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 2}};
-        case PieceType::L:
-            return {Coord{1, 0}, Coord{1, 1}, Coord{1, 2}, Coord{2, 0}};
-    }
-    return {};
-}
-
-static constexpr std::array<Coord, 4> get_cells_west_local(PieceType type) noexcept {
-    switch (type) {
-        case PieceType::I:
-            return {Coord{0, 1}, Coord{1, 1}, Coord{2, 1}, Coord{3, 1}};
-        case PieceType::O:
-            return {Coord{0, 1}, Coord{0, 2}, Coord{1, 1}, Coord{1, 2}};
-        case PieceType::T:
-            return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
-        case PieceType::S:
-            return {Coord{0, 0}, Coord{1, 0}, Coord{1, 1}, Coord{2, 1}};
-        case PieceType::Z:
-            return {Coord{0, 1}, Coord{1, 0}, Coord{1, 1}, Coord{2, 0}};
-        case PieceType::J:
-            return {Coord{0, 1}, Coord{1, 1}, Coord{2, 0}, Coord{2, 1}};
-        case PieceType::L:
-            return {Coord{0, 0}, Coord{0, 1}, Coord{1, 1}, Coord{2, 1}};
-    }
-    return {};
-}
-
-static constexpr std::array<Coord, 4> cells_for(PieceType type, PieceDirection dir) noexcept {
-    switch (dir) {
-        case PieceDirection::North:
-            return get_cells_north_local(type);
-        case PieceDirection::East:
-            return get_cells_east_local(type);
-        case PieceDirection::South:
-            return get_cells_south_local(type);
-        case PieceDirection::West:
-            return get_cells_west_local(type);
-    }
-    return {};
-}
 
 // =============================
 // ゴースト表示用ヘルパ
@@ -1261,6 +1120,8 @@ inline void render_current_tetrimino(const World& world, SDL_Renderer* const ren
         }
     }
 }
+
+inline void render_next_area(const World& world, SDL_Renderer* const renderer) {}
 
 // 描画(副作用：従来どおり直接描画でOK)
 export inline void render_world(const World& world, SDL_Renderer* const renderer) {
