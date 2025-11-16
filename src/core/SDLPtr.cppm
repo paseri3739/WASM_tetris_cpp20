@@ -1,3 +1,4 @@
+// RAII用のSDLポインタ型定義
 module;
 #include <SDL2/SDL.h>
 #include <memory>
