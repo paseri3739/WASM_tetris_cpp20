@@ -1,10 +1,7 @@
 module;
 #include <SDL2/SDL.h>
-#include <algorithm>
-#include <array>
 #include <entt/entt.hpp>
 #include <memory>
-#include <random>
 #include <string>
 #include <tl/expected.hpp>
 #include <vector>
@@ -17,6 +14,7 @@ import GameKey;
 import Input;
 import Tetrimino;
 import SRS;
+import SevenBag;
 // ★ 追加：フレームワーク側の純粋システム実行基盤を import
 import Command;
 
@@ -89,30 +87,6 @@ export struct LockTimer {
  * @brief ロック遅延時間(秒)
  */
 constexpr double kLockDelaySec = 0.3;
-
-/**
- * @brief テトリミノキュー
- * @param queue テトリミノ種別のキュー
- * @param rng 乱数生成器
- */
-struct PieceQueue {
-    std::deque<PieceType> queue;
-    std::mt19937 rng{std::random_device{}()};
-};
-
-static inline void refill_bag(PieceQueue& pq) {
-    std::array<PieceType, 7> bag{PieceType::I, PieceType::O, PieceType::T, PieceType::S,
-                                 PieceType::Z, PieceType::J, PieceType::L};
-    std::shuffle(bag.begin(), bag.end(), pq.rng);
-    for (auto t : bag) pq.queue.push_back(t);
-}
-
-static inline PieceType take_next(PieceQueue& pq) {
-    if (pq.queue.empty()) refill_bag(pq);
-    auto t = pq.queue.front();
-    pq.queue.pop_front();
-    return t;
-}
 
 /**
  * @brief  ハードドロップリクエストコンポーネント(押下フレームのみ)
