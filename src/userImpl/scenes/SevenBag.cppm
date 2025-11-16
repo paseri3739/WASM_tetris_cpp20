@@ -27,3 +27,10 @@ export inline PieceType take_next(PieceQueue& pq) {
     pq.queue.pop_front();
     return t;
 }
+
+/**
+ * @brief 現在のキューを読み取り専用で返す
+ * @param pq テトリミノキュー
+ * @return const 参照としての deque
+ */
+export inline const std::deque<PieceType>& view_queue(const PieceQueue& pq) { return pq.queue; }
