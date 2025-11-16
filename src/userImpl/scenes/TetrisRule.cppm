@@ -81,6 +81,7 @@ export struct TetriminoMeta {
     PieceDirection direction{};
     PieceStatus status{};
     int rotationCount{0};
+    int minimumY{0};  // ロック/回転リセット用
 };
 
 /**
@@ -642,6 +643,15 @@ static CommandList resolveRotationSystem_pure(
 
         if (ri.dir == 0) continue;
 
+        constexpr int kMaxRotationLocks = 15;
+
+        // ★ 追加:
+        //    着地中かつ回転回数が上限に達している場合は、
+        //    これ以上回転もロックリセットもしない
+        if (meta.status == PieceStatus::Landed && meta.rotationCount >= kMaxRotationLocks) {
+            continue;
+        }
+
         // SRS 用: 回転後方向
         const PieceDirection ndir = rotate_next(meta.direction, (ri.dir > 0 ? +1 : -1));
 
@@ -682,17 +692,27 @@ static CommandList resolveRotationSystem_pure(
         }
 
         // 回転確定
+        PieceStatus prevStatus = meta.status;  // ★ 追加：ステータス変化を検知するために保存
         meta.direction = ndir;
 
-        // 回転成功時はロック解除(クラシックな振る舞いの一つ)
-        if (meta.status != PieceStatus::Falling) {
+        // ★ 回転成功時 (prevStatus が Falling でも増やす)
+        meta.rotationCount++;
+
+        // 回転成功時はロック解除(ただし15回まで)
+        if (meta.status != PieceStatus::Falling && meta.rotationCount <= kMaxRotationLocks) {
             meta.status = PieceStatus::Falling;
         }
 
         // 位置とメタ情報を反映、LockTimer 解除
         out.emplace_back(wr.emplace_or_replace<TetriminoMeta>(e, meta));
         out.emplace_back(wr.emplace_or_replace<Position>(e, applied_px, applied_py));
-        out.emplace_back(wr.remove<LockTimer>(e));
+
+        // ★ 修正ポイント:
+        //    「着地(Landed) → 落下(Falling) に変わったときだけ」LockTimer をリセットする
+        if (prevStatus == PieceStatus::Landed && meta.status == PieceStatus::Falling &&
+            meta.rotationCount <= kMaxRotationLocks) {
+            out.emplace_back(wr.remove<LockTimer>(e));
+        }
     }
     return out;
 }
@@ -825,6 +845,10 @@ static CommandList resolveDropSystem_pure(
                 break;
             }
             pos.y = ny;
+            if (pos.y > meta.minimumY) {
+                meta.minimumY = pos.y;
+                meta.rotationCount = 0;  // 最低到達点更新で回転カウントリセット
+            }
         }
 
         out.emplace_back(wr.emplace_or_replace<Position>(e, pos));
@@ -947,7 +971,8 @@ static CommandList lockAndMergeSystem_pure(
             const PieceType next_type = take_next(piece_queue);
 
             r.emplace<Position>(ne, spawn_x, spawn_y);
-            r.emplace<TetriminoMeta>(ne, next_type, PieceDirection::West, PieceStatus::Falling);
+            r.emplace<TetriminoMeta>(ne, next_type, PieceDirection::West, PieceStatus::Falling, 0,
+                                     spawn_y);
             r.emplace<ActivePiece>(ne);
 
             const double base_rate =
@@ -1099,7 +1124,7 @@ export inline tl::expected<World, std::string> make_world(
     world.active = registry.create();
     registry.emplace<Position>(world.active, spawn_x, spawn_y);
     registry.emplace<TetriminoMeta>(world.active, first_type, PieceDirection::West,
-                                    PieceStatus::Falling);
+                                    PieceStatus::Falling, 0, spawn_y);
     registry.emplace<ActivePiece>(world.active);
 
     const double base_rate = (cfg.dropRate > 0.0) ? (1.0 / cfg.dropRate) : 0.0;
