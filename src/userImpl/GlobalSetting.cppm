@@ -18,14 +18,14 @@ struct TtfFontDeleter {
 using FontPtr = std::shared_ptr<TTF_Font>;
 
 struct GlobalSetting {
-    const int gridColumns;
-    const int gridRows;
-    const int cellWidth;
-    const int cellHeight;
-    const int gridAreaWidth;
-    const int gridAreaHeight;
-    const int frameRate;
-    const double dropRate;
+    const int gridColumns;            // 列数
+    const int gridRows;               // 行数
+    const int cellWidth;              // セル幅(ピクセル)
+    const int cellHeight;             // セル高さ(ピクセル)
+    const int gridAreaWidth;          // グリッド領域幅(ピクセル)
+    const int gridAreaHeight;         // グリッド領域高さ(ピクセル)
+    const int frameRate;              // フレームレート(FPS)
+    const double dropRate;            // 自動落下速度(セル／秒)
     const int spawn_col = 3;          // スポーン列
     const int spawn_row = 3;          // スポーン行
     const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
