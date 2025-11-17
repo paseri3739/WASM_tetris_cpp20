@@ -1,5 +1,6 @@
 module;
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
 #include <SDL2/SDL_ttf.h>
 #include <entt/entt.hpp>
 #include <memory>
@@ -61,6 +62,17 @@ struct SoftDrop {
     bool held{false};
     double multiplier{10.0};
 };
+// ★ 追加：ホールド状態を保持するリソース
+struct HeldPiece {
+    std::optional<PieceType> held_type{std::nullopt};
+    bool used_in_this_turn{false};  // そのピースで既にホールド済みか
+};
+
+/**
+ * @brief  ホールドリクエストコンポーネント(押下フレームのみ)
+ */
+struct HoldRequest {};
+
 /**
  * @brief 移動リクエストコンポーネント
  * @param dx X方向の移動量(セル単位)
@@ -229,7 +241,7 @@ static inline PieceDirection rotate_next(PieceDirection currentDirection, int di
  */
 static CommandList inputSystem_pure(
     ReadOnlyView<ActivePiece, SoftDrop, MoveIntent, RotateIntent, HardDropRequest> ro,
-    WriteCommands<SoftDrop, MoveIntent, RotateIntent, HardDropRequest> wr,
+    WriteCommands<SoftDrop, MoveIntent, RotateIntent, HardDropRequest, HoldRequest> wr,
     const TetrisResources& res) {
     CommandList out;
     const auto down_key = game_key::to_sdl_key(game_key::GameKey::DOWN);
@@ -282,15 +294,112 @@ static CommandList inputSystem_pure(
             if (ri.dir < -1) ri.dir = -1;
             out.emplace_back(wr.emplace_or_replace<RotateIntent>(e, ri));
         }
-        // --- 追記ここまで ---
 
-        // --- ここから追記: ハードドロップ要求(押下瞬間のみ) ---
+        // --- ハードドロップ要求(押下瞬間のみ) ---
         if (const auto drop = game_key::to_sdl_key(game_key::GameKey::DROP);
             drop && res.input.pressed(*drop)) {
             out.emplace_back(wr.emplace_or_replace<HardDropRequest>(e));
         }
-        // --- 追記ここまで ---
+
+        // --- 追記: ホールド要求(押下瞬間のみ) ---
+        if (const auto hold = game_key::to_sdl_key(game_key::GameKey::HOLD);
+            hold && res.input.pressed(*hold)) {
+            out.emplace_back(wr.emplace_or_replace<HoldRequest>(e));
+        }
     }
+    return out;
+}
+
+// =============================
+// ホールド解決(純粋)
+// =============================
+static CommandList resolveHoldSystem_pure(
+    ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, HoldRequest> ro,
+    WriteCommands<void> wr,  // create_then はもう使わないので wr は未使用
+    const TetrisResources& res) {
+    CommandList out;
+    if (!ro.valid(res.grid_e)) return out;
+
+    auto v = ro.view<ActivePiece, Position, TetriminoMeta, HoldRequest>();
+    if (!v) return out;
+
+    // アクティブピースは1個想定なので先頭だけ使う
+    const entt::entity target = *v.begin();
+
+    const auto& grid = ro.get<GridResource>(res.grid_e);
+    const int spawn_x = grid.origin_x + res.env.setting.spawn_col * grid.cellW;
+    const int spawn_y = grid.origin_y + res.env.setting.spawn_row * grid.cellH;
+
+    out.emplace_back(Command{[target, spawn_x, spawn_y, &res](entt::registry& r) {
+        auto& grid = r.get<GridResource>(res.grid_e);
+        auto& held = r.ctx().get<HeldPiece>();
+        auto& pq = r.ctx().get<PieceQueue>();
+
+        // 既にこのピースでホールド済みなら、リクエストだけ消す
+        if (held.used_in_this_turn) {
+            if (r.valid(target) && r.any_of<HoldRequest>(target)) {
+                r.remove<HoldRequest>(target);
+            }
+            return;
+        }
+        held.used_in_this_turn = true;
+
+        // --- 防御的チェック: target / コンポーネントの存在を確認 ---
+        if (!r.valid(target) || !r.any_of<TetriminoMeta, Position>(target)) {
+            // 想定外の状態なので、HoldRequest だけ掃除して終了
+            if (r.valid(target) && r.any_of<HoldRequest>(target)) {
+                r.remove<HoldRequest>(target);
+            }
+            return;
+        }
+
+        auto& meta = r.get<TetriminoMeta>(target);
+        auto& pos = r.get<Position>(target);
+
+        PieceType new_type;
+
+        if (!held.held_type.has_value()) {
+            // 初回ホールド: 現在の種を保存し、Bag から新規取得
+            held.held_type = meta.type;
+
+            if (pq.queue.empty()) {
+                refill_bag(pq);
+            }
+            new_type = take_next(pq);
+        } else {
+            // 2回目以降: ホールドと交換
+            new_type = *held.held_type;
+            held.held_type = meta.type;
+        }
+
+        // メタ情報を出現状態にリセット
+        meta.type = new_type;
+        meta.direction = PieceDirection::West;
+        meta.status = PieceStatus::Falling;
+        meta.rotationCount = 0;
+        meta.minimumY = spawn_y;
+
+        // 出現位置へ
+        pos.x = spawn_x;
+        pos.y = spawn_y;
+
+        // ロックタイマ/落下蓄積/ソフトドロップ状態のリセット
+        if (r.any_of<LockTimer>(target)) {
+            r.remove<LockTimer>(target);
+        }
+        if (auto* acc = r.try_get<FallAccCells>(target)) {
+            acc->cells = 0.0;
+        }
+        if (auto* sd = r.try_get<SoftDrop>(target)) {
+            sd->held = false;
+        }
+
+        // このフレームのホールドリクエストは消費
+        if (r.any_of<HoldRequest>(target)) {
+            r.remove<HoldRequest>(target);
+        }
+    }});
+
     return out;
 }
 
@@ -662,6 +771,11 @@ static CommandList lockAndMergeSystem_pure(
             const int spawn_x = g.origin_x + res.env.setting.spawn_col * g.cellW;
             const int spawn_y = g.origin_y + res.env.setting.spawn_row * g.cellH;
 
+            // ★ 追加：新しいピース出現時にホールド使用フラグをリセット
+            if (auto* held = r.ctx().find<HeldPiece>()) {
+                held->used_in_this_turn = false;
+            }
+
             // registry のコンテキストに保存してある PieceQueue を使用
             auto& piece_queue = r.ctx().get<PieceQueue>();
             if (piece_queue.queue.empty()) refill_bag(piece_queue);
@@ -811,6 +925,9 @@ export inline tl::expected<World, std::string> make_world(
     // 7-Bag 初期化と取得
     // registry のコンテキストに PieceQueue を保持(初回のみ emplace)
     auto& pq = registry.ctx().emplace<PieceQueue>();
+    // ★ 追加：ホールド情報もコンテキストに保持
+    auto& held = registry.ctx().emplace<HeldPiece>();
+    held.used_in_this_turn = false;
     if (pq.queue.empty()) {
         refill_bag(pq);
     }
@@ -841,6 +958,7 @@ export inline void step_world(const World& w, const Env<GlobalSetting>& env) {
 
     Schedule<TetrisResources> sch{{
         Phase<TetrisResources>{{make_system<TetrisResources>(inputSystem_pure)}},
+        Phase<TetrisResources>{{make_system<TetrisResources>(resolveHoldSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(gravitySystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(resolveRotationSystem_pure)}},
         Phase<TetrisResources>{{make_system<TetrisResources>(resolveLateralSystem_pure)}},
@@ -1079,7 +1197,43 @@ export inline void render_hold_area(const World& world, SDL_Renderer* const rend
         baseY += cellH * 2;
     }
 
-    // TODO: ホールドピースの描画は省略(必要に応じて実装)
+    // ★ 追加: HOLD パネル枠と中身の描画
+    const int panelX = baseX;
+    const int panelY = baseY;
+
+    // 枠(4x4)
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
+    SDL_Rect frame{panelX, panelY, cellW * 4, cellH * 4};
+    SDL_RenderDrawRect(renderer, &frame);
+
+    // グリッド線（任意）
+    for (int c = 1; c <= 3; ++c) {
+        const int x = panelX + c * cellW;
+        SDL_RenderDrawLine(renderer, x, panelY, x, panelY + cellH * 4);
+    }
+    for (int r = 1; r <= 3; ++r) {
+        const int y = panelY + r * cellH;
+        SDL_RenderDrawLine(renderer, panelX, y, panelX + cellW * 4, y);
+    }
+
+    // コンテキストに HeldPiece が無ければここで終了
+    auto* held = registry.ctx().find<HeldPiece>();
+    if (!held || !held->held_type.has_value()) {
+        return;  // 枠だけ表示
+    }
+
+    // ホールド中のテトリミノを描画
+    const PieceType piece_type = *held->held_type;
+    SDL_Color color = to_color(piece_type);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    const auto cells = cells_for(piece_type, PieceDirection::West);
+    for (const auto& c : cells) {
+        const int x = panelX + static_cast<int>(c.second) * cellW;
+        const int y = panelY + static_cast<int>(c.first) * cellH;
+        SDL_Rect rect{x, y, cellW, cellH};
+        SDL_RenderFillRect(renderer, &rect);
+    }
 }
 
 // 描画(副作用：従来どおり直接描画でOK)

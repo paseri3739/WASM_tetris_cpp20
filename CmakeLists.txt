@@ -107,6 +107,18 @@ add_dependencies(app copy_assets)
 # GoogleTest は本番アプリにはリンクしない(**ここが重要**)
 # find_package(GTest CONFIG REQUIRED) はテスト節で行う
 
+# boost stacktrace の設定
+if(NOT EMSCRIPTEN AND APPLE)
+        foreach(tgt core user_impl app app_tests)
+                if(TARGET ${tgt})
+                        target_compile_definitions(${tgt}
+                                PRIVATE
+                                BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+                        )
+                endif()
+        endforeach()
+endif()
+
 # ネイティブ専用 SDL2 関連パッケージ
 if(NOT EMSCRIPTEN)
         find_package(SDL2 CONFIG REQUIRED)
@@ -138,6 +150,7 @@ if(NOT EMSCRIPTEN)
         target_link_libraries(app PRIVATE
                 $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
         )
+
 endif()
 
 # Emscripten + SDL2 (Ports) を使う場合のリンクオプション

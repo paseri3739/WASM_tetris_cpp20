@@ -1,11 +1,12 @@
 {
   "dependencies": [
+    "entt",
     "gtest",
     "sdl2",
     "sdl2-image",
     "sdl2-mixer",
     "sdl2-ttf",
     "tl-expected",
-    "entt"
+    "boost-stacktrace"
   ]
 }
