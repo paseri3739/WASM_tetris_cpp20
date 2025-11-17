@@ -335,7 +335,7 @@ static CommandList resolveHoldSystem_pure(
         auto& held = r.ctx().get<HeldPiece>();
         auto& pq = r.ctx().get<PieceQueue>();
 
-        // 既にこのピースでホールド済みなら、リクエストだけ消す
+        // 既にこのピースでホールド済みなら、リクエストだけ消す TODO: 取り出す
         if (held.used_in_this_turn) {
             if (r.valid(target) && r.any_of<HoldRequest>(target)) {
                 r.remove<HoldRequest>(target);
