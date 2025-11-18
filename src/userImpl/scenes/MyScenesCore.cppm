@@ -14,7 +14,7 @@ import TetrisRule;
 export namespace my_scenes {
 
 // シーン純粋データ(World を抱えるだけ)
-struct InitialData {
+struct GameSceneData {
     std::shared_ptr<const global_setting::GlobalSetting> setting;
     tetris_rule::World world;
 };
@@ -22,6 +22,6 @@ struct InitialData {
 struct NextData {};
 struct ThirdData {};
 
-using Scene = std::variant<InitialData, NextData, ThirdData>;
+using Scene = std::variant<GameSceneData, NextData, ThirdData>;
 
 }  // namespace my_scenes

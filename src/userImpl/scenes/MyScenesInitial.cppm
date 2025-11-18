@@ -13,7 +13,7 @@ import GlobalSetting;
 import Input;
 import TetrisRule; // ★ ここだけ import すればよい
 import GameKey;
-import :Core;  // 型(InitialData, Scene) を参照
+import :Core;  // 型(GameSceneData, Scene) を参照
 
 export namespace my_scenes {
 
@@ -22,7 +22,7 @@ using scene_fw::Env;
 // 初期シーン生成
 inline tl::expected<Scene, std::string> make_initial(
     const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
-    InitialData s{};
+    GameSceneData s{};
     s.setting = gs;
     const auto world = tetris_rule::make_world(gs);
     if (!world) {
@@ -34,7 +34,7 @@ inline tl::expected<Scene, std::string> make_initial(
 }
 
 // 更新
-inline Scene update(const InitialData& s, const Env<global_setting::GlobalSetting>& env) {
+inline Scene update(const GameSceneData& s, const Env<global_setting::GlobalSetting>& env) {
     // 例：PAUSE で次のシーンへ
     // const auto pause_key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
     // if (env.input.pressed(*pause_key)) {
@@ -42,7 +42,7 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
     //     return Scene{next};
     // }
 
-    InitialData u = s;
+    GameSceneData u = s;
     tetris_rule::step_world(u.world, env);
     if (tetris_rule::is_gameover(u.world)) {
         ThirdData next{};
@@ -52,7 +52,7 @@ inline Scene update(const InitialData& s, const Env<global_setting::GlobalSettin
 }
 
 // 描画
-inline void render(const InitialData& s, SDL_Renderer* const renderer,
+inline void render(const GameSceneData& s, SDL_Renderer* const renderer,
                    const Env<global_setting::GlobalSetting>& env) {
     tetris_rule::render_world(s.world, renderer, env);
 }
