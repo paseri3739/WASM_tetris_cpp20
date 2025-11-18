@@ -27,7 +27,7 @@ struct GlobalSetting {
     const int frameRate;              // フレームレート(FPS)
     const double dropRate;            // 自動落下速度(セル／秒)
     const int spawn_col = 3;          // スポーン列
-    const int spawn_row = 3;          // スポーン行
+    const int spawn_row = 0;          // スポーン行
     const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
     const int maxDropsPerFrame = 6;   // 1フレームあたりの最大ドロップセル数
     const int maxRotationLocks = 15;  // 1回の回転操作あたりの最大ロック回数

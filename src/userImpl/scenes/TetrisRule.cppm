@@ -315,37 +315,29 @@ static CommandList inputSystem_pure(
 // =============================
 static CommandList resolveHoldSystem_pure(
     ReadOnlyView<GridResource, ActivePiece, Position, TetriminoMeta, HoldRequest> ro,
-    WriteCommands<void> wr,  // create_then はもう使わないので wr は未使用
-    const TetrisResources& res) {
+    WriteCommands<void> wr, const TetrisResources& res) {
     CommandList out;
     if (!ro.valid(res.grid_e)) return out;
-
-    auto v = ro.view<ActivePiece, Position, TetriminoMeta, HoldRequest>();
-    if (!v) return out;
-
-    // アクティブピースは1個想定なので先頭だけ使う
-    const entt::entity target = *v.begin();
 
     const auto& grid = ro.get<GridResource>(res.grid_e);
     const int spawn_x = grid.origin_x + res.env.setting.spawn_col * grid.cellW;
     const int spawn_y = grid.origin_y + res.env.setting.spawn_row * grid.cellH;
 
-    out.emplace_back(Command{[target, spawn_x, spawn_y, &res](entt::registry& r) {
-        auto& grid = r.get<GridResource>(res.grid_e);
+    // ★ ここから先は Command 側でエンティティを探す
+    out.emplace_back(Command{[grid_e = res.grid_e, spawn_x, spawn_y](entt::registry& r) {
+        // ActivePiece + HoldRequest を持つエンティティを再検索
+        auto v = r.view<ActivePiece, Position, TetriminoMeta, HoldRequest>();
+        if (v.begin() == v.end()) {
+            return;  // HOLD する対象がいなければ終了
+        }
+        const entt::entity target = *v.begin();
+
+        auto& grid = r.get<GridResource>(grid_e);
         auto& held = r.ctx().get<HeldPiece>();
         auto& pq = r.ctx().get<PieceQueue>();
 
-        // 既にこのピースでホールド済みなら、リクエストだけ消す TODO: 取り出す
-        if (held.used_in_this_turn) {
-            if (r.valid(target) && r.any_of<HoldRequest>(target)) {
-                r.remove<HoldRequest>(target);
-            }
-            return;
-        }
-        held.used_in_this_turn = true;
-
         // --- 防御的チェック: target / コンポーネントの存在を確認 ---
-        if (!r.valid(target) || !r.any_of<TetriminoMeta, Position>(target)) {
+        if (!r.valid(target) || !r.all_of<TetriminoMeta, Position>(target)) {
             // 想定外の状態なので、HoldRequest だけ掃除して終了
             if (r.valid(target) && r.any_of<HoldRequest>(target)) {
                 r.remove<HoldRequest>(target);
@@ -353,6 +345,7 @@ static CommandList resolveHoldSystem_pure(
             return;
         }
 
+        // ここから先は元のロジックそのまま
         auto& meta = r.get<TetriminoMeta>(target);
         auto& pos = r.get<Position>(target);
 
@@ -372,18 +365,15 @@ static CommandList resolveHoldSystem_pure(
             held.held_type = meta.type;
         }
 
-        // メタ情報を出現状態にリセット
         meta.type = new_type;
         meta.direction = PieceDirection::West;
         meta.status = PieceStatus::Falling;
         meta.rotationCount = 0;
         meta.minimumY = spawn_y;
 
-        // 出現位置へ
         pos.x = spawn_x;
         pos.y = spawn_y;
 
-        // ロックタイマ/落下蓄積/ソフトドロップ状態のリセット
         if (r.any_of<LockTimer>(target)) {
             r.remove<LockTimer>(target);
         }
@@ -394,7 +384,6 @@ static CommandList resolveHoldSystem_pure(
             sd->held = false;
         }
 
-        // このフレームのホールドリクエストは消費
         if (r.any_of<HoldRequest>(target)) {
             r.remove<HoldRequest>(target);
         }
