@@ -336,6 +336,15 @@ static CommandList resolveHoldSystem_pure(
         auto& held = r.ctx().get<HeldPiece>();
         auto& pq = r.ctx().get<PieceQueue>();
 
+        // 既にこのピースでホールド済みなら、リクエストだけ消す TODO: 取り出す
+        if (held.used_in_this_turn) {
+            if (r.valid(target) && r.any_of<HoldRequest>(target)) {
+                r.remove<HoldRequest>(target);
+            }
+            return;
+        }
+        held.used_in_this_turn = true;
+
         // --- 防御的チェック: target / コンポーネントの存在を確認 ---
         if (!r.valid(target) || !r.all_of<TetriminoMeta, Position>(target)) {
             // 想定外の状態なので、HoldRequest だけ掃除して終了
