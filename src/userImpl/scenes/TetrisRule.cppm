@@ -63,7 +63,7 @@ struct SoftDrop {
     double multiplier{10.0};
 };
 // ★ 追加：ホールド状態を保持するリソース
-struct HeldPiece {
+export struct HeldPiece {
     std::optional<PieceType> held_type{std::nullopt};
     bool used_in_this_turn{false};  // そのピースで既にホールド済みか
 };

@@ -1,11 +1,13 @@
 // tests/test_tetris_rule_systems.cpp
 
+#include <SDL2/SDL.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <entt/entt.hpp>
 #include <memory>
 
 import TetrisRule;
+import Tetrimino;
 import GlobalSetting;
 import SceneFramework;
 import Input;
@@ -17,12 +19,8 @@ using tetris_rule::ActivePiece;
 using tetris_rule::CellStatus;
 using tetris_rule::GridResource;
 using tetris_rule::LockTimer;
-using tetris_rule::PieceDirection;
-using tetris_rule::PieceStatus;
-using tetris_rule::PieceType;
 using tetris_rule::Position;
 using tetris_rule::RotateIntent;
-using tetris_rule::TetriminoMeta;
 using tetris_rule::World;
 
 // Env を簡単に構築するユーティリティ
@@ -413,21 +411,6 @@ TEST(TetrisRuleSystems, HOLDTest) {
     pos.y = grid.origin_y + base_row * grid.cellH;
     reg.replace<Position>(e, pos);
 
-    // その場(North 向き)では衝突しないように盤面を構成しつつ、
-    // North -> East の回転時 (0,0) では衝突、(-1,0) のキックでのみ成立する状況を作る。
-    //
-    // T ミノ North のセル(rr,cc)は:
-    //   (0,1), (1,0), (1,1), (1,2)
-    // なので、ベースから見て使用行は base_row, base_row+1 のみ。
-    //
-    // 一方 East のセルは:
-    //   (0,1), (1,1), (1,2), (2,1)
-    // なので、(2,1) -> (base_row+2, base_col+1) は
-    // North では使わないが East では使うセル。
-    //
-    // ここにブロックを置くことで、
-    //   - その場回転 (0,0) は East 配置時に衝突して失敗
-    //   - キック (-1,0) で左に 1 セルずらすと、このセルを使わないため成功
     const int block_row = base_row + 2;
     const int block_col = base_col + 1;
     ASSERT_LT(block_row, grid.rows);
@@ -437,34 +420,56 @@ TEST(TetrisRuleSystems, HOLDTest) {
     grid.occ_type[block_idx] = PieceType::O;  // 色は何でもよい
     reg.replace<GridResource>(w.grid_singleton, grid);
 
-    // 事前位置を保存
-    const auto posBefore = reg.get<Position>(e);
-
-    // 回転意図を直接付与(右回転 dir=+1)
-    RotateIntent ri{};
-    ri.dir = +1;
-    reg.emplace_or_replace<RotateIntent>(e, ri);
-
     // 入力は何も押していない状態、dt=0 とする
-    input::Input input{};
+    input::InputState input_state{.is_held = false, .is_pressed = true, .is_released = false};
+    std::unordered_map<SDL_Keycode, input::InputState> key_states = {
+        {SDLK_w, input_state},  // HOLD キーを押下
+    };
+    input::Input input{.key_states = key_states};
     auto env = makeEnv(*gs, input, 0.0);
 
-    // 1ステップ実行(SRS 対応 resolveRotationSystem_pure が走る)
+    // 1ステップ実行(HOLDが実行される)
     tetris_rule::step_world(w, env);
 
-    // 回転後の情報を取得
-    const auto& metaAfter = reg.get<TetriminoMeta>(e);
-    const auto& posAfter = reg.get<Position>(e);
+    for (const auto new_view = reg.view<tetris_rule::HeldPiece>(); auto e : new_view) {
+        const auto held_piece = new_view.get<tetris_rule::HeldPiece>(e);
+        EXPECT_EQ(held_piece.held_type.has_value(), true) << "HeldPieceが入っている";
+        EXPECT_EQ(held_piece.used_in_this_turn, true) << "ホールドしたタイミングではtrue";
+    }
 
-    // 向きは East に変わっているはず
-    EXPECT_EQ(metaAfter.type, PieceType::T);
-    EXPECT_EQ(metaAfter.direction, PieceDirection::East)
-        << "Tミノが SRS により North から East へ回転している想定です";
+    tetris_rule::step_world(w, env);
+    for (const auto new_view = reg.view<tetris_rule::HeldPiece>(); auto e : new_view) {
+        const auto held_piece = new_view.get<tetris_rule::HeldPiece>(e);
+        EXPECT_EQ(held_piece.held_type.has_value(), true) << "HeldPieceが入っている";
+        EXPECT_EQ(held_piece.held_type.value(), PieceType::T)
+            << "入れ替えが発生しないので変わっていないはず";
+        EXPECT_EQ(held_piece.used_in_this_turn, true) << "まだスポーンしていないはずなのでtrue";
+    }
 
-    // 位置は SRS キック (-1, 0) に対応して
-    // x 座標が 1セルぶん左へ移動し、y 座標は変わらない想定。
-    EXPECT_EQ(posAfter.y, posBefore.y)
-        << "North->East の Tスピン SRS では縦方向オフセット dy=0 のキックが選ばれる想定です";
-    EXPECT_EQ(posAfter.x, posBefore.x - grid.cellW)
-        << "North->East の SRS キック (-1,0) により、1セル左へ移動している想定です";
+    std::unordered_map<SDL_Keycode, input::InputState> key_states_drop = {
+        {SDLK_SPACE, input_state},  // ハードドロップキーを押下
+    };
+    input::Input input_drop{.key_states = key_states_drop};
+    auto env_drop = makeEnv(*gs, input_drop, 0.0);
+
+    tetris_rule::step_world(w, env_drop);  // ハードドロップが実行されてスポーンがかかる
+
+    for (const auto drop_view = reg.view<tetris_rule::HeldPiece>(); auto e : drop_view) {
+        const auto held_piece = drop_view.get<tetris_rule::HeldPiece>(e);
+        EXPECT_EQ(held_piece.held_type.has_value(), true)
+            << "使っていないのでHeldPieceが入っているはず";
+        EXPECT_EQ(held_piece.held_type.value(), PieceType::T)
+            << "入れ替えが発生していないので変わっていないはず";
+        EXPECT_EQ(held_piece.used_in_this_turn, false) << "スポーンしたのでfalseになっているはず";
+    }
+    // HOLD
+    tetris_rule::step_world(w, env);
+    for (const auto view3 = reg.view<tetris_rule::HeldPiece>(); auto e : view3) {
+        const auto held_piece = view3.get<tetris_rule::HeldPiece>(e);
+        EXPECT_EQ(held_piece.held_type.has_value(), true)
+            << "入れ替えなのでHeldPieceが入っているはず";
+        EXPECT_FALSE(held_piece.held_type.value() == PieceType::T)
+            << "入れ替えが発生しているため違う種類に変わっているはず";
+        EXPECT_EQ(held_piece.used_in_this_turn, false) << "入れ替えしたのでtrueになっているはず";
+    }
 }
