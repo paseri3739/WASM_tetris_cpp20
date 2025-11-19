@@ -6,7 +6,7 @@ module;
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <tl/expected.hpp>
-export module MyScenes:Third;  // パーティション名
+export module MyScenes:GameOver;  // パーティション名
 
 import SceneFramework;
 import GlobalSetting;
@@ -21,7 +21,7 @@ export namespace my_scenes {
 
 using scene_fw::Env;
 
-inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>& env) {
+inline Scene update(const GameOverSceneData& s, const Env<global_setting::GlobalSetting>& env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
     if (env.input.pressed(*key)) {
         if (auto initial =
@@ -32,7 +32,7 @@ inline Scene update(const ThirdData& s, const Env<global_setting::GlobalSetting>
 }
 
 // Game Over 画面の描画
-inline void render(const ThirdData& s, SDL_Renderer* const renderer,
+inline void render(const GameOverSceneData& s, SDL_Renderer* const renderer,
                    const Env<global_setting::GlobalSetting>& env) {
     // 背景を赤でクリア
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);

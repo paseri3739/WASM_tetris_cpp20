@@ -20,8 +20,8 @@ struct GameSceneData {
 };
 
 struct NextData {};
-struct ThirdData {};
+struct GameOverSceneData {};
 
-using Scene = std::variant<GameSceneData, NextData, ThirdData>;
+using Scene = std::variant<GameSceneData, NextData, GameOverSceneData>;
 
 }  // namespace my_scenes
