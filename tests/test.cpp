@@ -240,6 +240,7 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     ASSERT_EQ(view.size_hint(), 1u);
     const entt::entity e = *view.begin();
     const auto& posBefore = view.get<Position>(e);
+    const int before_y = posBefore.y;  // コピーしないと比較ができない
     const auto& gravityFromWorld = view.get<tetris_rule::Gravity>(e);
     ASSERT_EQ(gravity_cps, gravityFromWorld.rate_cps);  // セル毎秒は1/dropRateであることを確認
 
@@ -251,9 +252,10 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
 
     // 位置を再取得
     const auto& posAfter = reg.get<Position>(e);
+    const int after_y = posAfter.y;  // コピー
 
     EXPECT_EQ(posAfter.x, posBefore.x);
-    EXPECT_EQ(posAfter.y, posBefore.y + gravityFromWorld.rate_cps * cellH)
+    EXPECT_EQ(after_y, before_y + gravityFromWorld.rate_cps * cellH)
         << "1 秒経過で 1 セル分だけ落下する想定です";
 }
 
