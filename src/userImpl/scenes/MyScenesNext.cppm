@@ -21,7 +21,7 @@ using scene_fw::Env;
 inline Scene update(const NextData& s, const Env<global_setting::GlobalSetting>& env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
     if (env.input.pressed(*key)) {
-        ThirdData third{};
+        GameOverSceneData third{};
         return Scene{third};
     }
     return Scene{s};
