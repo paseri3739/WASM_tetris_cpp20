@@ -5,7 +5,6 @@
 module;
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <memory>
 #include <tl/expected.hpp>
 export module MyScenes:Third;  // パーティション名
 
@@ -61,8 +60,8 @@ inline void render(const ThirdData& s, SDL_Renderer* const renderer,
                 SDL_Rect dst{};
                 dst.w = tex_w;
                 dst.h = tex_h;
-                dst.x = (setting.gridAreaWidth - tex_w) / 2;
-                dst.y = (setting.gridAreaHeight - tex_h) / 2;
+                dst.x = (setting.canvasWidth - tex_w) / 2;
+                dst.y = (setting.canvasHeight - tex_h) / 2;
 
                 SDL_RenderCopy(renderer, texture.get(), nullptr, &dst);
             }

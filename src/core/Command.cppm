@@ -1,13 +1,14 @@
 module;
+#ifndef __EMSCRIPTEN__
 #include "entt_assert_with_stacktrace.hpp"
+#endif
+#include <entt/entt.hpp>
 #include <functional>
 #include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <entt/entt.hpp>
-
 
 export module Command;
 

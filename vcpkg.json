@@ -1,12 +1,15 @@
 {
-  "dependencies": [
-    "entt",
-    "gtest",
-    "sdl2",
-    "sdl2-image",
-    "sdl2-mixer",
-    "sdl2-ttf",
-    "tl-expected",
-    "boost-stacktrace"
-  ]
+    "dependencies": [
+        "entt",
+        "gtest",
+        "sdl2",
+        "sdl2-image",
+        "sdl2-mixer",
+        "sdl2-ttf",
+        "tl-expected",
+        {
+            "name": "boost-stacktrace",
+            "platform": "!wasm32"
+        }
+    ]
 }

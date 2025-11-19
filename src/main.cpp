@@ -37,7 +37,7 @@ int main() {
         }
 
         auto s = std::make_shared<Setting>(columns, rows, cell_width, cell_height, fps, drop_rate,
-                                           std::move(font));
+                                           std::move(font), canvas_width, canvas_height);
 
         // const 共有ポインタとして返す
         return std::shared_ptr<const Setting>(std::move(s));

@@ -141,8 +141,8 @@ export struct GridResource {
 
 // Grid 上に (piecePx, piecePy) のピクセル位置で meta のテトリミノを置けるか？
 // (ActivePiece 自身は Grid に書き込まれていない前提)
-static inline bool can_place_on_grid_pixel(const GridResource& grid, const TetriminoMeta& meta,
-                                           int piecePx, int piecePy) {
+inline bool can_place_on_grid_pixel(const GridResource& grid, const TetriminoMeta& meta,
+                                    int piecePx, int piecePy) {
     const auto shape = cells_for(meta.type, meta.direction);
 
     for (auto [rr, cc] : shape) {
@@ -165,8 +165,8 @@ static inline bool can_place_on_grid_pixel(const GridResource& grid, const Tetri
 }
 
 // 現在位置から縦方向に落とせるだけ落とした位置(ゴースト位置)を返す
-static inline Position compute_ghost_position(const GridResource& grid, const Position& currentPos,
-                                              const TetriminoMeta& meta) {
+inline Position compute_ghost_position(const GridResource& grid, const Position& currentPos,
+                                       const TetriminoMeta& meta) {
     Position ghost = currentPos;
     const int step_py = grid.cellH;  // 1セルぶんのピクセル
 

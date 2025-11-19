@@ -26,6 +26,8 @@ struct GlobalSetting {
     const int gridAreaHeight;         // グリッド領域高さ(ピクセル)
     const int frameRate;              // フレームレート(FPS)
     const double dropRate;            // 自動落下速度(セル／秒)
+    const int canvasWidth;            // キャンバス幅(ピクセル)
+    const int canvasHeight;           // キャンバス高さ(ピクセル)
     const int spawn_col = 3;          // スポーン列
     const int spawn_row = 0;          // スポーン行
     const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
@@ -39,7 +41,7 @@ struct GlobalSetting {
 
     // 現在の設定を取得
     GlobalSetting(int columns, int rows, int cell_w, int cell_h, int fps, double drop_rate,
-                  FontPtr font_)
+                  FontPtr font_, int canvas_w, int canvas_h)
         : gridColumns(columns),
           gridRows(rows),
           cellWidth(cell_w),
@@ -48,6 +50,8 @@ struct GlobalSetting {
           gridAreaHeight(rows * cell_h),
           frameRate(fps),
           dropRate(drop_rate),
+          canvasWidth(canvas_w),
+          canvasHeight(canvas_h),
           font(std::move(font_)) {}
 
     // 必要ならアクセサ
