@@ -3,7 +3,6 @@
 // ===========================
 module;
 #include <entt/entt.hpp>
-#include <memory>
 #include <variant>
 
 export module MyScenes:Core;  // パーティション名
@@ -15,13 +14,12 @@ export namespace my_scenes {
 
 // シーン純粋データ(World を抱えるだけ)
 struct GameSceneData {
-    std::shared_ptr<const global_setting::GlobalSetting> setting;
     tetris_rule::World world;
 };
 
-struct NextData {};
+struct InitialSceneData {};
 struct GameOverSceneData {};
 
-using Scene = std::variant<GameSceneData, NextData, GameOverSceneData>;
+using Scene = std::variant<GameSceneData, InitialSceneData, GameOverSceneData>;
 
 }  // namespace my_scenes

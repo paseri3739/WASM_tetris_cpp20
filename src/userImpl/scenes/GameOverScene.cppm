@@ -12,9 +12,8 @@ import SceneFramework;
 import GlobalSetting;
 import Input;
 import GameKey;
-import TetrisRule; // make_initial の再呼び出し経路で必要
 import :Core;
-import :Initial;  // make_initial を呼ぶため
+import :GameScene;  // make_initial を呼ぶため
 import SDLPtr;
 
 export namespace my_scenes {
@@ -24,9 +23,7 @@ using scene_fw::Env;
 inline Scene update(const GameOverSceneData& s, const Env<global_setting::GlobalSetting>& env) {
     const auto key = game_key::to_sdl_key(game_key::GameKey::PAUSE);
     if (env.input.pressed(*key)) {
-        if (auto initial =
-                make_initial(std::make_shared<global_setting::GlobalSetting>(env.setting)))
-            return initial.value();
+        if (auto initial = my_scenes::create_game_scene(env)) return initial.value();
     }
     return Scene{s};
 }

@@ -15,9 +15,9 @@ import GlobalSetting;
 // シーン定義や各シーン固有の処理はパーティションに分割
 export import :Core;  // 型と共通事項
 // 全シーンの実装をインポートする
-export import :Initial;   // 初期シーン
-export import :Next;      // 次のシーン
-export import :GameOver;  // 三つ目のシーン
+export import :GameScene;  // 初期シーン
+export import :Initial;    // 次のシーン
+export import :GameOver;   // 三つ目のシーン
 
 export namespace my_scenes {
 
@@ -29,7 +29,7 @@ struct Impl {
 
     static tl::expected<Scene, std::string> make_initial(
         const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
-        return my_scenes::make_initial(gs);
+        return my_scenes::create_first_scene(*gs);
     }
 
     static Scene step(Scene current, const Env<global_setting::GlobalSetting>& env) {

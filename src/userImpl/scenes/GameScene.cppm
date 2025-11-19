@@ -6,12 +6,11 @@ module;
 #include <SDL2/SDL.h>
 #include <tl/expected.hpp>
 
-export module MyScenes:Initial;  // パーティション名
+export module MyScenes:GameScene;  // パーティション名
 
 import SceneFramework;
 import GlobalSetting;
 import Input;
-import TetrisRule; // ★ ここだけ import すればよい
 import GameKey;
 import :Core;  // 型(GameSceneData, Scene) を参照
 
@@ -20,11 +19,12 @@ export namespace my_scenes {
 using scene_fw::Env;
 
 // 初期シーン生成
-inline tl::expected<Scene, std::string> make_initial(
-    const std::shared_ptr<const global_setting::GlobalSetting>& gs) {
-    GameSceneData s{};
-    s.setting = gs;
-    const auto world = tetris_rule::make_world(gs);
+inline tl::expected<Scene, std::string> create_game_scene(
+    const Env<global_setting::GlobalSetting>& env) {
+    GameSceneData s{
+        .world = {},  // 後で初期化
+    };
+    const auto world = tetris_rule::make_world(env);
     if (!world) {
         return tl::make_unexpected("world initialization failed.");
     }

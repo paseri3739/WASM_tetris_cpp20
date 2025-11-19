@@ -894,13 +894,11 @@ static CommandList gameOverCheckSystem_pure(
 
 // ワールド生成
 export inline tl::expected<World, std::string> make_world(
-    const std::shared_ptr<const GlobalSetting>& gs) {
-    if (!gs) return tl::make_unexpected("GlobalSetting is null");
-
+    const Env<global_setting::GlobalSetting>& env) {
     World world{};
     world.registry = std::make_shared<entt::registry>();
     auto& registry = *world.registry;
-    const auto& cfg = *gs;
+    const auto& cfg = env.setting;
 
     // GridResource(singleton 的エンティティ)
     world.grid_singleton = registry.create();
@@ -917,8 +915,8 @@ export inline tl::expected<World, std::string> make_world(
     grid.occ_type.assign(grid.rows * grid.cols, PieceType::I);  // 初期値は未使用だが埋めておく
 
     // アクティブピース
-    const int spawn_x = grid.origin_x + gs->spawn_col * grid.cellW;
-    const int spawn_y = grid.origin_y + gs->spawn_row * grid.cellH;
+    const int spawn_x = grid.origin_x + cfg.spawn_col * grid.cellW;
+    const int spawn_y = grid.origin_y + cfg.spawn_row * grid.cellH;
 
     // 7-Bag 初期化と取得
     // registry のコンテキストに PieceQueue を保持(初回のみ emplace)
