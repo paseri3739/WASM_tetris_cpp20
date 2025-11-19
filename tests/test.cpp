@@ -38,16 +38,16 @@ static Env<GlobalSetting> makeEnv(const GlobalSetting& setting, const input::Inp
 }
 
 // テスト用 GlobalSetting の生成ユーティリティ
-static std::shared_ptr<const GlobalSetting> makeSetting(int columns, int rows, int cellWidth,
-                                                        int cellHeight, int fps, double dropRate) {
+static const GlobalSetting makeSetting(int columns, int rows, int cellWidth, int cellHeight,
+                                       int fps, double dropRate) {
     // フォントはロジックに不要なので nullptr でよい
-    FontPtr font{};  // デフォルト構築で null
+    FontPtr font{};                                            // デフォルト構築で null
+    const int canvas_width = columns * cellWidth + (150 * 2);  // 右側にnextを出すための150px
+    const int canvas_height = rows * cellHeight;
+    auto s = GlobalSetting{columns,         rows,      cellWidth, cellHeight, fps, dropRate,
+                           std::move(font), cellWidth, cellHeight};
 
-    auto s = std::make_shared<GlobalSetting>(columns, rows, cellWidth, cellHeight, fps, dropRate,
-                                             std::move(font));
-
-    // shared_ptr<GlobalSetting> → shared_ptr<const GlobalSetting> へ暗黙変換
-    return std::shared_ptr<const GlobalSetting>(std::move(s));
+    return s;
 }
 
 // ------------------------------------------------------------
@@ -62,7 +62,9 @@ TEST(TetrisRuleSystems, LineClearRemovesFullBottomRow) {
     constexpr double dropRate = 0.0;  // 重力を無効化
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 0.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -79,8 +81,6 @@ TEST(TetrisRuleSystems, LineClearRemovesFullBottomRow) {
     reg.replace<GridResource>(w.grid_singleton, grid);
 
     // 入力は何もしないダミー
-    input::Input input{};
-    auto env = makeEnv(*gs, input, 0.0);  // dt=0 なのでロックタイマも進まない
 
     // 1ステップ実行(LineClearSystem を含む全 System が走る)
     tetris_rule::step_world(w, env);
@@ -111,7 +111,9 @@ TEST(TetrisRuleSystems, GameOverWhenSpawnOverlapsFilledColumns) {
     constexpr double dropRate = 0.0;
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 0.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -130,9 +132,6 @@ TEST(TetrisRuleSystems, GameOverWhenSpawnOverlapsFilledColumns) {
         }
     }
     reg.replace<GridResource>(w.grid_singleton, grid);
-
-    input::Input input{};
-    auto env = makeEnv(*gs, input, 0.0);
 
     // 1ステップ実行すると、最後の gameOverCheckSystem_pure で
     // ActivePiece が配置不能と判定され gameover フラグが立つはず
@@ -155,7 +154,9 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
     constexpr double dropRate = 0.0;  // 重力無効化(位置が変わらないようにする)
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 0.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -190,9 +191,6 @@ TEST(TetrisRuleSystems, LockAndMergeFixesPieceAndSpawnsNewActive) {
         cell = CellStatus::Empty;
     }
     reg.replace<GridResource>(w.grid_singleton, grid);
-
-    input::Input input{};
-    auto env = makeEnv(*gs, input, 0.0);  // dt=0: LockTimerTick は sec を増やさない
 
     // 1ステップ実行
     tetris_rule::step_world(w, env);
@@ -229,7 +227,9 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     constexpr double gravity_cps = 1 / dropRate;
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 1.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -243,10 +243,6 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     const int before_y = posBefore.y;  // コピーしないと比較ができない
     const auto& gravityFromWorld = view.get<tetris_rule::Gravity>(e);
     ASSERT_EQ(gravity_cps, gravityFromWorld.rate_cps);  // セル毎秒は1/dropRateであることを確認
-
-    input::Input input{};
-    // dt = 1.0 秒 → 1 セル分の落下が起こるはず
-    auto env = makeEnv(*gs, input, 1.0);
 
     tetris_rule::step_world(w, env);
 
@@ -275,7 +271,9 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     constexpr double dropRate = 0.0;  // 重力無効化
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 0.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -344,10 +342,6 @@ TEST(TetrisRuleSystems, SRSTSpinKickNorthToEast) {
     ri.dir = +1;
     reg.emplace_or_replace<RotateIntent>(e, ri);
 
-    // 入力は何も押していない状態、dt=0 とする
-    input::Input input{};
-    auto env = makeEnv(*gs, input, 0.0);
-
     // 1ステップ実行(SRS 対応 resolveRotationSystem_pure が走る)
     tetris_rule::step_world(w, env);
 
@@ -380,7 +374,9 @@ TEST(TetrisRuleSystems, HOLDTest) {
     constexpr double dropRate = 0.0;  // 重力無効化
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
-    auto worldExp = tetris_rule::make_world(gs);
+    auto input = input::Input{};
+    auto env = makeEnv(gs, input, 0.0);
+    auto worldExp = tetris_rule::make_world(env);
     ASSERT_TRUE(worldExp.has_value());
     World w = *worldExp;
 
@@ -431,11 +427,11 @@ TEST(TetrisRuleSystems, HOLDTest) {
     std::unordered_map<SDL_Keycode, input::InputState> key_states = {
         {SDLK_w, input_state},  // HOLD キーを押下
     };
-    input::Input input{.key_states = key_states};
-    auto env = makeEnv(*gs, input, 0.0);
+    input::Input input2{.key_states = key_states};
+    auto env2 = makeEnv(gs, input2, 0.0);
 
     // 1ステップ実行(HOLDが実行される)
-    tetris_rule::step_world(w, env);
+    tetris_rule::step_world(w, env2);
 
     for (const auto new_view = reg.view<tetris_rule::HeldPiece>(); auto e : new_view) {
         const auto held_piece = new_view.get<tetris_rule::HeldPiece>(e);
@@ -456,7 +452,7 @@ TEST(TetrisRuleSystems, HOLDTest) {
         {SDLK_SPACE, input_state},  // ハードドロップキーを押下
     };
     input::Input input_drop{.key_states = key_states_drop};
-    auto env_drop = makeEnv(*gs, input_drop, 0.0);
+    auto env_drop = makeEnv(gs, input_drop, 0.0);
 
     tetris_rule::step_world(w, env_drop);  // ハードドロップが実行されてスポーンがかかる
 
