@@ -13,7 +13,8 @@ import SceneFramework;
 import GlobalSetting;
 
 // シーン定義や各シーン固有の処理はパーティションに分割
-export import :Core;      // 型と共通事項
+export import :Core;  // 型と共通事項
+// 全シーンの実装をインポートする
 export import :Initial;   // 初期シーン
 export import :Next;      // 次のシーン
 export import :GameOver;  // 三つ目のシーン
