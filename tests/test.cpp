@@ -226,6 +226,7 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     constexpr int cellH = 16;
     constexpr int fps = 60;
     constexpr double dropRate = 1.0;  // 1.0 [sec / cell] → rate_cps = 1.0 [cell / sec]
+    constexpr double gravity_cps = 1 / dropRate;
 
     auto gs = makeSetting(columns, rows, cellW, cellH, fps, dropRate);
     auto worldExp = tetris_rule::make_world(gs);
@@ -235,10 +236,12 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     auto& reg = *w.registry;
 
     // ActivePiece の現在位置を取得
-    auto view = reg.view<ActivePiece, Position, TetriminoMeta>();
+    auto view = reg.view<ActivePiece, Position, TetriminoMeta, tetris_rule::Gravity>();
     ASSERT_EQ(view.size_hint(), 1u);
     const entt::entity e = *view.begin();
     const auto& posBefore = view.get<Position>(e);
+    const auto& gravityFromWorld = view.get<tetris_rule::Gravity>(e);
+    ASSERT_EQ(gravity_cps, gravityFromWorld.rate_cps);  // セル毎秒は1/dropRateであることを確認
 
     input::Input input{};
     // dt = 1.0 秒 → 1 セル分の落下が起こるはず
@@ -250,7 +253,8 @@ TEST(TetrisRuleSystems, GravityMakesPieceFallOneCellPerSecond) {
     const auto& posAfter = reg.get<Position>(e);
 
     EXPECT_EQ(posAfter.x, posBefore.x);
-    EXPECT_EQ(posAfter.y, posBefore.y + cellH) << "1 秒経過で 1 セル分だけ落下する想定です";
+    EXPECT_EQ(posAfter.y, posBefore.y + gravityFromWorld.rate_cps * cellH)
+        << "1 秒経過で 1 セル分だけ落下する想定です";
 }
 
 // ------------------------------------------------------------

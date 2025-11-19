@@ -52,7 +52,7 @@ export struct ActivePiece {
  * @brief 重力コンポーネント
  * @param rate_cps 落下速度(セル／秒)
  */
-struct Gravity {
+export struct Gravity {
     double rate_cps{};
 };
 struct FallAccCells {
