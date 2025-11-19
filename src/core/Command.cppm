@@ -163,6 +163,42 @@ struct WriteCommands {
 export template <class Resources>
 using PureSystem = std::function<CommandList(const entt::registry& view, const Resources& res)>;
 
+// ------------------------------------------------------
+// run_if: 条件付きで System を実行するラッパ
+//   - cond は以下のいずれかのシグネチャを取れる:
+//       bool ()
+//       bool (const Resources&)
+//       bool (const entt::registry&, const Resources&)
+// ------------------------------------------------------
+export template <class Resources, class Cond>
+PureSystem<Resources> run_if(PureSystem<Resources> sys, Cond cond) {
+    return [sys = std::move(sys), cond = std::move(cond)](const entt::registry& reg,
+                                                          const Resources& res) -> CommandList {
+        bool ok = false;
+
+        if constexpr (std::is_invocable_v<Cond, const entt::registry&, const Resources&>) {
+            ok = std::invoke(cond, reg, res);
+        } else if constexpr (std::is_invocable_v<Cond, const Resources&>) {
+            ok = std::invoke(cond, res);
+        } else if constexpr (std::is_invocable_v<Cond>) {
+            ok = std::invoke(cond);
+        } else {
+            static_assert(
+                std::is_invocable_v<Cond, const entt::registry&, const Resources&> ||
+                    std::is_invocable_v<Cond, const Resources&> || std::is_invocable_v<Cond>,
+                "run_if condition must be callable as (), (Resources) or (registry, Resources)");
+        }
+
+        if (!ok) {
+            // 条件が false の場合、この System は「何もしなかった」ことにする
+            return {};
+        }
+
+        // 条件が true の場合のみ元の System を実行
+        return sys(reg, res);
+    };
+}
+
 // フェーズ/スケジュール：競合を分けて逐次適用
 export template <class Resources>
 struct Phase {
