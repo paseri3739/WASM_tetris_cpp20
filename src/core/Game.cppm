@@ -14,7 +14,7 @@ import SceneFramework; // 新規
 import Input;
 
 // =============================
-// フレーム処理（Game 本体）
+// フレーム処理(Game 本体)
 // =============================
 
 export template <class Setting, class SceneImpl>
@@ -57,8 +57,8 @@ class Game final {
         }
         window_.reset(raw_window);
 
-        SDL_Renderer* raw_renderer =
-            SDL_CreateRenderer(window_.get(), -1, SDL_RENDERER_ACCELERATED);
+        SDL_Renderer* raw_renderer = SDL_CreateRenderer(
+            window_.get(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         if (!raw_renderer) {
             std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError()
                       << std::endl;
@@ -69,7 +69,7 @@ class Game final {
         }
         renderer_.reset(raw_renderer);
 
-        // ここで SDL 初期化成功後に Setting を構築する（SDL 依存のグローバル状態もここで作れる）
+        // ここで SDL 初期化成功後に Setting を構築する(SDL 依存のグローバル状態もここで作れる)
         setting_ = make_setting(window_.get(), renderer_.get());
         if (!setting_) {
             std::cerr << "Setting could not be created by factory!" << std::endl;
@@ -113,12 +113,12 @@ class Game final {
         fps_elapsed_seconds_ += delta_time_seconds;
         ++fps_frame_count_;
 
-        // 1秒ごとに平均値を出す（多すぎるログを避ける）
+        // 1秒ごとに平均値を出す(多すぎるログを避ける)
         if (fps_elapsed_seconds_ >= 1.0) {
             const double fps = static_cast<double>(fps_frame_count_) / fps_elapsed_seconds_;
             const double ms_per_frame = 1000.0 / (fps > 0.0 ? fps : 1.0);
 
-            // SDL のログ機構（emscripten でもブラウザコンソールに出ます）
+            // SDL のログ機構(emscripten でもブラウザコンソールに出ます)
             SDL_Log("FPS: %.2f  (%.2f ms/frame)", fps, ms_per_frame);
 
             // 次の区間のためにリセット
@@ -152,12 +152,12 @@ class Game final {
             pending_setting_patches_.push_back(std::move(patch));
         };
 
-        // ロジックはすべて SceneImpl 側へ委譲（この段階では setting_ はまだ不変）
+        // ロジックはすべて SceneImpl 側へ委譲(この段階では setting_ はまだ不変)
         scene_ = SceneImpl::step(std::move(scene_), env);
 
         // --- Game 側で適用タイミングを制御：update 終了時に一括適用 ---
         if (!pending_setting_patches_.empty()) {
-            // 複数予約されている場合は順次適用（関数合成相当）
+            // 複数予約されている場合は順次適用(関数合成相当)
             for (auto& patch : pending_setting_patches_) {
                 // null 安全: patch は必ず新しい共有ポインタを返す想定
                 setting_ = patch(setting_);
@@ -180,7 +180,7 @@ class Game final {
             running_ = false;
         }
         input_ = input;
-        // scene 側への明示的な伝播は不要（Env に束ねて update に渡す）
+        // scene 側への明示的な伝播は不要(Env に束ねて update に渡す)
     }
 
     /**

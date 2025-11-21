@@ -14,7 +14,7 @@ namespace input {
  *
  * ※ 本モジュールでは SDL のキーコードをそのまま扱うため、
  *    この enum は利用側で独自に定義して SDL_Keycode とマッピングしてください。
- *    （例: GameInputKey など）
+ *    (例: GameInputKey など)
  */
 // export enum class InputKey { UP, DOWN, LEFT, RIGHT, ROTATE_LEFT, ROTATE_RIGHT, DROP, PAUSE, QUIT
 // };
@@ -32,7 +32,7 @@ namespace input {
 /**
  * SDL キーコードを InputKey に変換する関数
  * @param code SDL_Keycode
- * @return std::optional<InputKey> 変換結果（存在しない場合は std::nullopt）
+ * @return std::optional<InputKey> 変換結果(存在しない場合は std::nullopt)
  *
  * ※ 本モジュールでは変換を行いません。
  *    呼び出し側で SDL_Keycode -> 独自の enum への変換関数を定義してください。
@@ -61,11 +61,11 @@ namespace input {
  * - clear_frame_state: フレーム状態をクリアした新インスタンスを返す
  * - to_string: 入力状態を文字列に変換する
  *
- * 追加API（呼び出し側での利用を簡便化）:
+ * 追加API(呼び出し側での利用を簡便化):
  * - pressed/released/held: 指定キーの瞬間/保持状態の取得
  * - any_pressed/any_released/any_held: いずれかのキーが該当するか
  * - first_pressed/first_released/first_held: 優先順に最初に該当したキー
- * - get_input_key: 全体の集約状態（いずれかが立っていれば OR 集約を返す）
+ * - get_input_key: 全体の集約状態(いずれかが立っていれば OR 集約を返す)
  *
  * ※ 優先順や抽象キーは、本モジュールでは固定しません。
  *    必要に応じて呼び出し側で SDL_Keycode の配列・enum を定義してご利用ください。

@@ -18,29 +18,40 @@ struct TtfFontDeleter {
 using FontPtr = std::shared_ptr<TTF_Font>;
 
 struct GlobalSetting {
-    const int gridColumns;
-    const int gridRows;
-    const int cellWidth;
-    const int cellHeight;
-    const int canvasWidth;
-    const int canvasHeight;
-    const int frameRate;
-    const double dropRate;
+    const int gridColumns;            // 列数
+    const int gridRows;               // 行数
+    const int cellWidth;              // セル幅(ピクセル)
+    const int cellHeight;             // セル高さ(ピクセル)
+    const int gridAreaWidth;          // グリッド領域幅(ピクセル)
+    const int gridAreaHeight;         // グリッド領域高さ(ピクセル)
+    const int frameRate;              // フレームレート(FPS)
+    const double dropRate;            // 自動落下速度(セル／秒)
+    const int canvasWidth;            // キャンバス幅(ピクセル)
+    const int canvasHeight;           // キャンバス高さ(ピクセル)
+    const int spawn_col = 3;          // スポーン列
+    const int spawn_row = 0;          // スポーン行
+    const double lockDelaySec = 0.3;  // ロック遅延時間(秒)
+    const int maxDropsPerFrame = 6;   // 1フレームあたりの最大ドロップセル数
+    const int maxRotationLocks = 15;  // 1回の回転操作あたりの最大ロック回数
+    const int nextAreaWidth = 150;    // Next表示領域幅(ピクセル)
+    const int holdAreaWidth = 150;    // Hold表示領域幅(ピクセル)
 
     // フォントキャッシュ
     FontPtr font;
 
     // 現在の設定を取得
     GlobalSetting(int columns, int rows, int cell_w, int cell_h, int fps, double drop_rate,
-                  FontPtr font_)
+                  FontPtr font_, int canvas_w, int canvas_h)
         : gridColumns(columns),
           gridRows(rows),
           cellWidth(cell_w),
           cellHeight(cell_h),
-          canvasWidth(columns * cell_w),
-          canvasHeight(rows * cell_h),
+          gridAreaWidth(columns * cell_w),
+          gridAreaHeight(rows * cell_h),
           frameRate(fps),
           dropRate(drop_rate),
+          canvasWidth(canvas_w),
+          canvasHeight(canvas_h),
           font(std::move(font_)) {}
 
     // 必要ならアクセサ

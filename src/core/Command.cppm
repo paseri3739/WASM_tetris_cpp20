@@ -1,4 +1,7 @@
 module;
+#ifndef __EMSCRIPTEN__
+#include "entt_assert_with_stacktrace.hpp"
+#endif
 #include <entt/entt.hpp>
 #include <functional>
 #include <memory>
@@ -44,7 +47,7 @@ export struct CommandBuffer {
     }
 };
 
-// よく使うコマンドのヘルパ（テンプレートで汎用化）
+// よく使うコマンドのヘルパ(テンプレートで汎用化)
 export namespace cmd {
 
 // emplace_or_replace<T>(entity, args...)
@@ -63,7 +66,7 @@ Command emplace_or_replace(entt::entity e, Args&&... args) {
     }};
 }
 
-// 値を直接渡すオーバーロードも用意（明示 move 向け）
+// 値を直接渡すオーバーロードも用意(明示 move 向け)
 template <class T>
 Command emplace_or_replace(entt::entity e, T&& value) {
     auto holder = std::make_unique<std::decay_t<T>>(std::forward<T>(value));
@@ -113,7 +116,7 @@ struct ReadOnlyView {
         return reg.get<const T>(e);
     }
 
-    // view を取得（指定できるのは ReadComponents のサブセットだけ）
+    // view を取得(指定できるのは ReadComponents のサブセットだけ)
     template <class... Ts>
     auto view() const {
         static_assert((detail::is_in_v<Ts, ReadComponents...> && ...),
@@ -156,9 +159,45 @@ struct WriteCommands {
 // ------------------------------
 
 // 純粋 System のシグネチャ：const registry + Resources -> CommandList
-// （実体は「ReadOnlyView + WriteCommands + Resources -> CommandList」を包んだもの）
+// (実体は「ReadOnlyView + WriteCommands + Resources -> CommandList」を包んだもの)
 export template <class Resources>
 using PureSystem = std::function<CommandList(const entt::registry& view, const Resources& res)>;
+
+// ------------------------------------------------------
+// run_if: 条件付きで System を実行するラッパ
+//   - cond は以下のいずれかのシグネチャを取れる:
+//       bool ()
+//       bool (const Resources&)
+//       bool (const entt::registry&, const Resources&)
+// ------------------------------------------------------
+export template <class Resources, class Cond>
+PureSystem<Resources> run_if(PureSystem<Resources> sys, Cond cond) {
+    return [sys = std::move(sys), cond = std::move(cond)](const entt::registry& reg,
+                                                          const Resources& res) -> CommandList {
+        bool ok = false;
+
+        if constexpr (std::is_invocable_v<Cond, const entt::registry&, const Resources&>) {
+            ok = std::invoke(cond, reg, res);
+        } else if constexpr (std::is_invocable_v<Cond, const Resources&>) {
+            ok = std::invoke(cond, res);
+        } else if constexpr (std::is_invocable_v<Cond>) {
+            ok = std::invoke(cond);
+        } else {
+            static_assert(
+                std::is_invocable_v<Cond, const entt::registry&, const Resources&> ||
+                    std::is_invocable_v<Cond, const Resources&> || std::is_invocable_v<Cond>,
+                "run_if condition must be callable as (), (Resources) or (registry, Resources)");
+        }
+
+        if (!ok) {
+            // 条件が false の場合、この System は「何もしなかった」ことにする
+            return {};
+        }
+
+        // 条件が true の場合のみ元の System を実行
+        return sys(reg, res);
+    };
+}
 
 // フェーズ/スケジュール：競合を分けて逐次適用
 export template <class Resources>

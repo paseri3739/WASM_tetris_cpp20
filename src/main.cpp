@@ -9,14 +9,14 @@ int main() {
     using Setting = global_setting::GlobalSetting;
     using Impl = my_scenes::Impl;
 
-    // ウィンドウサイズはここで決める（必要なら Setting の内容から計算してもよい）
+    // ウィンドウサイズはここで決める(必要なら Setting の内容から計算してもよい)
     constexpr int columns = 10;
     constexpr int rows = 20;
     constexpr int cell_width = 30;
     constexpr int cell_height = 30;
     constexpr int fps = 60;
     constexpr double drop_rate = 0.7;
-    constexpr int canvas_width = columns * cell_width;
+    constexpr int canvas_width = columns * cell_width + (150 * 2);  // 右側にnextを出すための150px
     constexpr int canvas_height = rows * cell_height;
 
     // SDL 初期化 / window / renderer 生成後に呼ばれる Setting のファクトリ
@@ -37,7 +37,7 @@ int main() {
         }
 
         auto s = std::make_shared<Setting>(columns, rows, cell_width, cell_height, fps, drop_rate,
-                                           std::move(font));
+                                           std::move(font), canvas_width, canvas_height);
 
         // const 共有ポインタとして返す
         return std::shared_ptr<const Setting>(std::move(s));

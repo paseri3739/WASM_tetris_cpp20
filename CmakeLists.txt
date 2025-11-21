@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-# Homebrew LLVM の clang/clang++ を優先採用（初回 configure 時のみ効く）
+# Homebrew LLVM の clang/clang++ を優先採用(初回 configure 時のみ効く)
 # 既に -DCMAKE_CXX_COMPILER を渡されている場合は尊重します。
 if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
         # よくある Homebrew のインストール先を優先探索
@@ -10,12 +10,12 @@ if(APPLE AND NOT DEFINED CMAKE_CXX_COMPILER)
         )
         find_program(LLVM_CLANGXX NAMES clang++ HINTS ${_LLVM_HINTS})
         if(LLVM_CLANGXX)
-                # C 言語は使わないなら C は設定不要（不要な警告回避のため）
+                # C 言語は使わないなら C は設定不要(不要な警告回避のため)
                 set(CMAKE_CXX_COMPILER "${LLVM_CLANGXX}" CACHE FILEPATH "C++ compiler" FORCE)
         endif()
 endif()
 
-# macOS SDK を明示(clang-scan-deps が system headers を確実に解決できるように）
+# macOS SDK を明示(clang-scan-deps が system headers を確実に解決できるように)
 if(APPLE AND NOT CMAKE_OSX_SYSROOT)
         execute_process(
                 COMMAND xcrun --sdk macosx --show-sdk-path
@@ -36,18 +36,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# 参考: AppleClang が選ばれてしまった場合は明示的に落とす（早期に気づくため）
+# 参考: AppleClang が選ばれてしまった場合は明示的に落とす(早期に気づくため)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
         message(FATAL_ERROR
                 "AppleClang が選択されています。Homebrew LLVM の clang++ を使用するように設定してください。"
         )
 endif()
 
-# ▼ 共通: モジュールを収めるライブラリを作る（**ここが重要**）
-# core ライブラリ（フレームワーク部分）
+# ▼ 共通: モジュールを収めるライブラリを作る(**ここが重要**)
+# core ライブラリ(フレームワーク部分)
 add_library(core)
 
-# 通常ソース（.cppm をモジュールIFユニットとして集約）
+# 通常ソース(.cppm をモジュールIFユニットとして集約)
 file(GLOB_RECURSE CORE_MODULE_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cppm"
 )
@@ -60,7 +60,7 @@ target_sources(core
         ${CORE_MODULE_SOURCES}
 )
 
-# 共通パッケージ（コア側にぶら下げる）
+# 共通パッケージ(コア側にぶら下げる)
 find_package(tl-expected CONFIG REQUIRED)
 target_link_libraries(core PUBLIC tl::expected)
 
@@ -86,7 +86,7 @@ target_sources(user_impl
 # userImpl から core を利用する
 target_link_libraries(user_impl PUBLIC core)
 
-# ▼ 本番アプリ（**テストとは分離**）
+# ▼ 本番アプリ(**テストとは分離**)
 add_executable(app)
 target_sources(app PRIVATE
         src/main.cpp
@@ -104,8 +104,20 @@ add_custom_target(copy_assets ALL
 add_dependencies(app copy_assets)
 
 
-# GoogleTest は本番アプリにはリンクしない（**ここが重要**）
+# GoogleTest は本番アプリにはリンクしない(**ここが重要**)
 # find_package(GTest CONFIG REQUIRED) はテスト節で行う
+
+# boost stacktrace の設定
+if(NOT EMSCRIPTEN AND APPLE)
+        foreach(tgt core user_impl app app_tests)
+                if(TARGET ${tgt})
+                        target_compile_definitions(${tgt}
+                                PRIVATE
+                                BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+                        )
+                endif()
+        endforeach()
+endif()
 
 # ネイティブ専用 SDL2 関連パッケージ
 if(NOT EMSCRIPTEN)
@@ -138,16 +150,27 @@ if(NOT EMSCRIPTEN)
         target_link_libraries(app PRIVATE
                 $<IF:$<TARGET_EXISTS:SDL2_ttf::SDL2_ttf>,SDL2_ttf::SDL2_ttf,SDL2_ttf::SDL2_ttf-static>
         )
+
 endif()
 
 # Emscripten + SDL2 (Ports) を使う場合のリンクオプション
 # -sUSE_SDL=2 はリンク時オプションなので target_link_options で指定
 if(EMSCRIPTEN)
-        target_link_options(app PRIVATE
+        # SDL 関連の port フラグ（コンパイル時にも必要）
+        set(_EMSCRIPTEN_SDL_FLAGS
                 "-sUSE_SDL=2"
                 "-sUSE_SDL_IMAGE=2"
                 "-sUSE_SDL_MIXER=2"
                 "-sUSE_SDL_TTF=2"
+        )
+
+        # SDL のヘッダをインクルードするターゲットのコンパイル時にもフラグを渡す
+        target_compile_options(user_impl PRIVATE ${_EMSCRIPTEN_SDL_FLAGS})
+        target_compile_options(app PRIVATE ${_EMSCRIPTEN_SDL_FLAGS})
+
+        # 実際のリンクオプション
+        target_link_options(app PRIVATE
+                ${_EMSCRIPTEN_SDL_FLAGS}
                 "-sALLOW_MEMORY_GROWTH=1"
                 "-sASSERTIONS=1"
 
@@ -159,7 +182,8 @@ if(EMSCRIPTEN)
 endif()
 
 
-# ▼ テスト用バイナリ（**GUI 依存を切り離す**)
+
+# ▼ テスト用バイナリ(**GUI 依存を切り離す**)
 include(CTest)
 if(BUILD_TESTING AND NOT EMSCRIPTEN)
         find_package(GTest CONFIG REQUIRED)

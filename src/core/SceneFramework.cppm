@@ -20,13 +20,13 @@ struct Env {
         std::function<std::shared_ptr<const Setting>(std::shared_ptr<const Setting>)>;
 
     // シーン側から更新を予約するためのキューイング関数
-    // （Game が提供。Scene はここに Patch を投げるだけ）
+    // (Game が提供。Scene はここに Patch を投げるだけ)
     std::function<void(SettingPatch)> queue_setting_update;
 
     // 便利ヘルパ: 値→値の変換器を渡すだけで Patch 化して予約
     template <class Fn>
     void update_setting(Fn&& fn) const {
-        // Fn:   const Setting& -> Setting （新しい値を返す純関数）
+        // Fn:   const Setting& -> Setting (新しい値を返す純関数)
         // 注意: Setting が大きい場合は move 最適化が効くように設計してください
         if (!queue_setting_update) return;
         queue_setting_update([f = std::forward<Fn>(fn)](std::shared_ptr<const Setting> cur) {
